@@ -1,18 +1,19 @@
-import React, { Component } from 'react';
+import { Component } from 'react';
 import PropTypes from 'prop-types';
-import RouterContext from 'react-router/lib/RouterContext';
-import { loadAsyncConnect } from '../helpers/utils';
+import { renderRoutes } from 'react-router-config';
+import { invokeAsyncDispatchers } from '../helpers/utils';
 import { getMutableState } from '../helpers/state';
 
-export class AsyncConnect extends Component {
+export class AsyncRouteLoader extends Component {
   static propTypes = {
     render: PropTypes.func.isRequired,
-    beginGlobalLoad: PropTypes.func.isRequired,
-    endGlobalLoad: PropTypes.func.isRequired,
     reloadOnPropsChange: PropTypes.func,
     /* eslint-disable react/forbid-prop-types, react/no-unused-prop-types */
-    components: PropTypes.array.isRequired,
-    params: PropTypes.object.isRequired,
+    beginGlobalLoad: PropTypes.func.isRequired,
+    endGlobalLoad: PropTypes.func.isRequired,
+    reducerName: PropTypes.string,
+    routes: PropTypes.array.isRequired,
+    location: PropTypes.string.isRequired,
     helpers: PropTypes.any,
     /* eslint-enable */
   };
@@ -23,11 +24,12 @@ export class AsyncConnect extends Component {
 
   static defaultProps = {
     helpers: {},
+    reducerName: 'asyncReduxDispatcher',
     reloadOnPropsChange() {
       return true;
     },
-    render(props) {
-      return <RouterContext {...props} />;
+    render({ routes }) {
+      return renderRoutes(routes);
     },
   };
 
@@ -68,17 +70,19 @@ export class AsyncConnect extends Component {
   }
 
   isLoaded() {
-    return getMutableState(this.context.store.getState()).reduxAsyncConnect.loaded;
+    const { reducerName } = this.props;
+    return getMutableState(this.context.store.getState())[reducerName].loaded;
   }
 
   loadAsyncData(props) {
-    const store = this.context.store;
-    const loadResult = loadAsyncConnect({ ...props, store });
+    const { store } = this.context;
+    const { routes, location, helpers, beginGlobalLoad, endGlobalLoad } = props;
+    const dispatcherPromise = invokeAsyncDispatchers(routes, store, location, helpers);
 
     // TODO: think of a better solution to a problem?
     this.loadDataCounter += 1;
-    this.props.beginGlobalLoad();
-    return (loadDataCounterOriginal => loadResult.then(() => {
+    beginGlobalLoad();
+    return (loadDataCounterOriginal => dispatcherPromise.then(() => {
       // We need to change propsToShow only if loadAsyncData that called this promise
       // is the last invocation of loadAsyncData method. Otherwise we can face a situation
       // when user is changing route several times and we finally show him route that has
@@ -89,7 +93,7 @@ export class AsyncConnect extends Component {
 
       // TODO: investigate race conditions
       // do we need to call this if it's not last invocation?
-      this.props.endGlobalLoad();
+      endGlobalLoad();
     }))(this.loadDataCounter);
   }
 
@@ -99,4 +103,4 @@ export class AsyncConnect extends Component {
   }
 }
 
-export default AsyncConnect;
+export default AsyncRouteLoader;

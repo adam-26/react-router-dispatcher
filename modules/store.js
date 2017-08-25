@@ -1,12 +1,12 @@
 import { createAction, handleActions } from 'redux-actions';
 import { getMutableState, getImmutableState } from './helpers/state';
 
-export const clearKey = createAction('@redux-conn/CLEAR');
-export const beginGlobalLoad = createAction('@redux-conn/BEGIN_GLOBAL_LOAD');
-export const endGlobalLoad = createAction('@redux-conn/END_GLOBAL_LOAD');
-export const load = createAction('@redux-conn/LOAD', key => ({ key }));
-export const loadSuccess = createAction('@redux-conn/LOAD_SUCCESS', (key, data) => ({ key, data }));
-export const loadFail = createAction('@redux-conn/LOAD_FAIL', (key, error) => ({ key, error }));
+export const clearKey = createAction('@redux-dispatcher/CLEAR');
+export const beginGlobalLoad = createAction('@redux-dispatcher/BEGIN_GLOBAL_LOAD');
+export const endGlobalLoad = createAction('@redux-dispatcher/END_GLOBAL_LOAD');
+export const load = createAction('@redux-dispatcher/LOAD', key => ({ key }));
+export const loadSuccess = createAction('@redux-dispatcher/LOAD_SUCCESS', (key, data) => ({ key, data }));
+export const loadFail = createAction('@redux-dispatcher/LOAD_FAIL', (key, error) => ({ key, error }));
 
 const initialState = {
   loaded: false,

@@ -1,3 +1,6 @@
+
+This is a fork of [redux-connect](https://github.com/makeomatic/redux-connect), but updated to work with react-router v4.x
+
 ReduxConnect for React Router
 ============
 [![npm version](https://img.shields.io/npm/v/redux-connect.svg?style=flat-square)](https://www.npmjs.com/package/redux-connect)
