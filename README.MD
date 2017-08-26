@@ -1,161 +1,320 @@
+# react-router-dispatcher
+-------
+Enables async data to be loaded using redux _before_ react rendering on both **server** and **client** environments, using:
+ * [react](https://facebook.github.io/react/)
+ * [redux](http://redux.js.org/)
+ * [react-redux](https://github.com/reactjs/react-redux)
+ * [react-router v4.x](https://reacttraining.com/react-router/web/api/location)
 
-This is a fork of [redux-connect](https://github.com/makeomatic/redux-connect), but updated to work with react-router v4.x
+Supports:
+ * [redux-thunk](https://github.com/gaearon/redux-thunk)
+ * [redux-saga](https://redux-saga.js.org)
 
-ReduxConnect for React Router
-============
-[![npm version](https://img.shields.io/npm/v/redux-connect.svg?style=flat-square)](https://www.npmjs.com/package/redux-connect)
-[![Build Status](https://travis-ci.org/makeomatic/redux-connect.svg?branch=master)](https://travis-ci.org/makeomatic/redux-connect)
-[![Gratipay](http://img.shields.io/gratipay/user/AVVS.svg)](https://gratipay.com/~AVVS/)
+##### Install
+Install using NPM:
+
+```
+npm install --save react-router-dispatcher
+```
+
+Install using Yarn:
+
+```
+yarn install react-router-dispatcher
+```
 
 
-How do you usually request data and store it to redux state?
-You create actions that do async jobs to load data, create reducer to save this data to redux state,
-then connect data to your component or container.
+### Introduction
 
-Usually it's very similar routine tasks.
+This package uses redux _route actions_ to load (async) data on the server and client, it has been tested using _redux-thunk_ and _redux-saga_. This approach maintains consistancy across your project.
 
-Also, usually we want data to be preloaded. Especially if you're building universal app,
-or you just want pages to be solid, don't jump when data was loaded.
+> for documentation purposes, we define a **route action** to be a redux action that is responsible for loading the data required to render a specific route.
 
-This package consist of 2 parts: one part allows you to delay containers rendering until some async actions are happening.
-Another stores your data to redux state and connect your loaded data to your container.
+Its recommended that the _route actions_ **only** dispatch other actions that are required for a route to render.
 
-## Notice
+Unlike some other [react-router v4.x](https://reacttraining.com/react-router/web) server-side rendering solutions (such as [react-jobs](https://github.com/ctrlplusb/react-jobs)), this package does **not** perform a "pre-render parse", it performs only a **single render** per request. It achieves this using the `react-router-config` package to enable server-side rendering.
 
-This is a fork and refactor of [redux-async-connect](https://github.com/Rezonans/redux-async-connect)
+**Important:** this restricts _how_ you define the routes for your application. You **must** define routes using the react-router _config_ format, **not** using `<Route />` components.
 
-## Installation & Usage
 
-Using [npm](https://www.npmjs.com/):
+Here is an example react-router v4.x route configuration:
+```js
+const routes = [{
+  component: RootComponent,
+  routes: [{
+    path: '/',
+    exact: true,
+    component: AppComponent,
+    routes: [{
+      path: '/account',
+      exact: true,
+      component: AccountComponent
+    }]
+  }]
+}];
+```
 
-`$ npm install redux-connect -S`
+> For documentation purposes, we will define a **RouteComponent** to be any react component used in the route configuration. Only **RouteComponent**'s can initiate dispatch actions to load data for rendering.
+
+> In the above example, RootComponent, AppComponent and AccountComponent are all considered **RouteCommponet**'s for documentation purposes.
+
+At first, this may sound restrictive so it's _important_ to understand that a RouteComponent can invoke `routeDispatcher` methods of child components.
+
+### Quickstart
+_The quickstart assumes you are very familar with react, redux and react-router_
+
+Use the `withDispatcher` method to assign a _route dispatcher_ to a RouteComponent:
+```js
+import { withDispatcher } from 'react-router-dispatcher';
+
+// parameters: (redux store, react-router match, optional helpers)
+export default withDispatcher(({dispatch}, {params}) => {
+
+  // You MUST return the dispatch response
+  // use the route parameters to dispatch a route action that will load all the data required for this request
+  return dispatch(routeAction(params.urlValue));
+
+})(RouteComponent);
+
+```
+
+It's recommended that `withDispatcher` dispatch actions using _redux middleware_.
+
+Because `withDispatcher` is invoked before the RouteComponent is rendered, the standard redux `mapStateToProps` can be used by the RouteComponent to configure access to the required data from the redux store.
+
+Then, configure your application to use the `RouteDispatcher` component:
 
 ```js
-import { Router, browserHistory } from 'react-router';
-import { ReduxAsyncConnect, asyncConnect, reducer as reduxAsyncConnect } from 'redux-connect'
-import React from 'react'
-import { render } from 'react-dom'
-import { createStore, combineReducers } from 'redux';
+import Provider from 'redux';
+import { StaticRouter } from 'react-router';
+import RouteDispatcher from 'react-router-dispatcher';
 
-// 1. Connect your data, similar to react-redux @connect
-@asyncConnect([{
-  key: 'lunch',
-  promise: ({ params, helpers }) => Promise.resolve({ id: 1, name: 'Borsch' })
-}])
-class App extends React.Component {
+export default class AppComponent extends React.Component {
+
+  // propTypes, etc...
+
   render() {
-    // 2. access data as props
-    const lunch = this.props.lunch
+    const {store, routes, location} = this.props;
     return (
-      <div>{lunch.name}</div>
-    )
+      <RouteDispatcher routes={routes} />
+    );
+  }
+}
+```
+
+The `RouteDispatcher` will ensure all RouteComponent dispatchers are processed before rendering.
+
+Configure the client to render the app using react-router-redux `ConnectedRouter`, it uses redux to maintain router state:
+
+```js
+// client.js
+import React from 'react';
+import { render } from 'react-dom';
+import { createStore } from 'redux';
+import { Provider } from 'react-redux';
+import { ConnectedRouter, routerMiddleware } from 'react-router-redux';
+import RouteDispatcher from 'react-router-dispatcher';
+import createBrowserHistory from 'history/createBrowserHistory';
+import routes from '...';
+
+const history = createBrowserHistory();
+const supportsHistory = 'pushState' in window.history;
+// ...create redux store - be sure to include 'routerMiddleware'
+const store = createStore(...);
+
+const clientApp = (
+  <Provider store={store}>
+    <ConnectedRouter history={history} forceRefresh={!supportsHistory}>
+      <RouteDispatcher routes={routes} />
+    </ConnectedRouter>
+  </Provider>
+);
+
+render(clientApp, htmlElement);
+```
+
+Render the `App` on the server using react-routers `StaticRouter`:
+
+```js
+// server.js - expressjs example
+import { renderToString, renderToStaticMarkup } from 'react-dom/server';
+import { StaticRouter } from 'react-router-dom';
+import { createStore } from 'redux';
+import { Provider } from 'react-redux';
+import { routerMiddleware } from 'react-router-redux';
+import RouteDispatcher, { dispatchOnServer } from 'react-router-dispatcher';
+import routes from '...';
+
+app.use('*', (request, response) => {
+
+  // create redux store - add reducers, middleware
+  // be sure to include 'routerMiddleware'
+  const store = createStore(...);
+  const location = request.url;
+
+  const serverApp = (
+    <Provider store={store}>
+      <StaticRouter location={location} context={reactRouterContext}>
+        <RouteDispatcher routes={routes} />
+      </StaticRouter>
+    </Provider>
+  );
+
+  dispatchOnServer(store, routes, location).then(() => {
+
+    const renderedApp = renderToString(serverApp);
+    const html = renderToStaticMarkup(`<html><body>${renderedApp}</body></html>`);
+    response.status(200).send(`<!DOCTYPE html>${html}`);
+  });
+});
+```
+
+##### A note about caching data
+No cache management should be done with route dispatchers. All configured actions will be dispatched for each route request. The **redux actions** using redux middleware should implement caching if its required
+
+#### Route Containers
+
+A `routeContainer()` HOC method is included in the package that allows you to easily assign different components to render based on the current state of a RouteComponent:
+
+```js
+import { routeContainer } from 'react-router-dispatcher';
+
+const RouteContainer = routeContainer({
+  onLoad: () => (<div>loading...</div>),
+  onError: ({ error }) => (<div>{error}</div>),
+})(RouteComponent);
+```
+It's important to understand that a `RouteContainer` should **only** be used like a RouteComponent. A RouteContainer will **not render correctly** if its not used within a route configuration.
+
+### Advanced Usage
+
+Server-side rendering using _redux-saga_:
+
+```js
+// #1. Run the root saga
+const sagaPromise = sagaMiddleware.run(rootSaga);
+
+// #2. Invoke all route dispatchers to run sagas
+dispatchOnServer(store, routes, location, {}).then(() => {
+
+  // #3. Inform saga that all actions have been dispatched
+  store.dispatch(END);
+
+  // #4. Render after the saga promise is done
+  sagaPromise.done.then(() => {
+    render(<App store={store} routes={routes} location={location} />, htmlElement);
+  });
+});
+```
+
+Dispatching multiple actions:
+```js
+// You can dispatch mulitple actions using Promise.all()
+export default withDispatcher(({dispatch}, {params}) => {
+  return Promise.all([
+    dispatch(reduxAction(params.urlValue)),
+    dispatch(otherAction(params.anotherUrlValue))
+  ]);
+})(RouteComponent);
+```
+
+Dispatching child component a RouteComponent `routeDispatcher`:
+
+```js
+import { Component } from 'react';
+import Header from './HeaderComponent';
+import Catalogue from './CatalogueComponent';
+import Footer from './FooterComponent';
+
+class CatalogueRouteComponent extends Component {
+
+  render() {
+    return (
+      <div>
+        <Header>
+        <Catalogue>
+        <Footer>
+      </div>
+    );
   }
 }
 
-// 3. Connect redux async reducer
-const store = createStore(combineReducers({ reduxAsyncConnect }), window.__data);
+export default withDispatcher((store, match) => {
+  return Promise.all([
+    Header.routeDispacther(store, match),
+    Catalogue.routeDispacther(store, match)
+  ]);
+})(CatalogueComponent);
 
-// 4. Render `Router` with ReduxAsyncConnect middleware
-render((
-  <Provider store={store} key="provider">
-    <Router render={(props) => <ReduxAsyncConnect {...props}/>} history={browserHistory}>
-      <Route path="/" component={App}/>
-    </Router>
-  </Provider>
-), el)
 ```
 
-### Server
+## API
+
+_NOTE: The API documentation still needs a lot of improvement._
+
+#### withDispatcher()
+
+Assigns a dispatcher to a RouteComponent
+
+> HOC
 
 ```js
-import { renderToString } from 'react-dom/server'
-import { match, RoutingContext } from 'react-router'
-import { ReduxAsyncConnect, loadOnServer, reducer as reduxAsyncConnect } from 'redux-connect'
-import createHistory from 'history/lib/createMemoryHistory';
-import { Provider } from 'react-redux';
-import { createStore, combineReducers } from 'redux';
-import serialize from 'serialize-javascript';
+import { withDispather } from 'react-router-dispatcher';
 
-app.get('*', (req, res) => {
-  const store = createStore(combineReducers({ reduxAsyncConnect }));
+type RouteDispatcher = ((reduxStore: Object, match: Object, helpers?: Object)): mixed;
 
-  match({ routes, location: req.url }, (err, redirect, renderProps) => {
+withDispather(routeDispatcher: RouteDispatcher):
+```
 
-    // 1. load data
-    loadOnServer({ ...renderProps, store }).then(() => {
+> ES7 Decorator
+>
+> Requires [babel plugin transform-decorators](https://babeljs.io/docs/plugins/transform-decorators/)
 
-      // 2. use `ReduxAsyncConnect` instead of `RoutingContext` and pass it `renderProps`
-      const appHTML = renderToString(
-        <Provider store={store} key="provider">
-          <ReduxAsyncConnect {...renderProps} />
-        </Provider>
-      )
-
-      // 3. render the Redux initial data into the server markup
-      const html = createPage(appHTML, store)
-      res.send(html)
-    })
-  })
-})
-
-function createPage(html, store) {
-  return `
-    <!doctype html>
-    <html>
-      <body>
-        <div id="app">${html}</div>
-
-        <!-- its a Redux initial data -->
-        <script dangerouslySetInnerHTML={{__html: `window.__data=${serialize(store.getState())};`}} charSet="UTF-8"/>
-      </body>
-    </html>
-  `
+```js
+@withDispather(routeDispatcher: RouteDispatcher)
+export default class RouteComponent extends Component {
+  // ...
 }
 ```
 
-## [API](/docs/API.MD)
+#### connectDispatcher()
 
-## Usage with `applyRouterMiddleware`
+Assigns a dispatcher to a RouteComponent and connect to the redux store. This is a utility method that enables you to assign a dispatcher and configure the redux store in a single command.
 
-Thanks to @mmahalwy for a good usage example
-Pass custom `render` method to `ReduxAsyncConnect`, it can look like this:
-
-```js
-// on client
-const component = (
-  <Router
-    render={(props) => (
-      <ReduxAsyncConnect
-        {...props}
-        helpers={{ client }}
-        filter={item => !item.deferred}
-        render={applyRouterMiddleware(useScroll())}
-      />
-    )}
-    history={history}
-    routes={getRoutes(store)}
-  />
-);
-```
-
-Basically what you do is instead of using render method like:
+see [react-redux](https://github.com/reactjs/react-redux) for more information about the `connect` parameters.
 
 ```js
-const render = props => <RouterContext {...props} />;
+import { connectDispatcher } from 'react-router-dispatcher';
+
+connectDispather(routeDispatcher: RouteDispatcher, [mapPropsToStore], [mapDispatchToProps], [mergeProps], [options]):
 ```
 
-you use
+#### dispatchOnServer()
+
+Dispatch all route actions for a server render
 
 ```js
-const render = applyRouterMiddleware(...middleware);
+import { dispatchOnServer } from 'react-router-dispatcher';
+
+dispatchOnServer(store: Object, routes: Array, location: string, helpers?: Object): Promise;
 ```
+
+#### &lt;RouteDispatcher /&gt;
+Synchronizes state between server and client rendering, and invokes dispatchers on the client when required.
+
+```js
+import RouteDispatcher from 'react-router-dispatcher';
+
+<RouteDispatcher routes={} helpers={{}} />
+```
+
 
 ## Usage with `ImmutableJS`
 
 This lib can be used with ImmutableJS or any other immutability lib by providing methods that convert the state between mutable and immutable data. Along with those methods, there is also a special immutable reducer that needs to be used instead of the normal reducer.
 
 ```js
-import { setToImmutableStateFunc, setToMutableStateFunc, immutableReducer as reduxAsyncConnect } from 'redux-connect';
+import { setToImmutableStateFunc, setToMutableStateFunc, immutableReducer as routeDispatcherReducer } from 'react-router-dispatcher';
 
 // Set the mutability/immutability functions
 setToImmutableStateFunc((mutableState) => Immutable.fromJS(mutableState));
@@ -163,7 +322,7 @@ setToMutableStateFunc((immutableState) => immutableState.toJS());
 
 // Thats all, now just use redux-connect as normal
 export const rootReducer = combineReducers({
-  reduxAsyncConnect,
+  routeDispatcher: routeDispatcherReducer,
   ...
 })
 ```
@@ -184,49 +343,22 @@ const reloadOnPropsChange = (props, nextProps) => {
 };
 
 export const Root = ({ store, history }) => (
-  <Provider store={store} key="provider">
-    <Router render={(props) => <ReduxAsyncConnect {...props}
-      reloadOnPropsChange={reloadOnPropsChange}/>} history={history}>
-      {getRoutes(store)}
-    </Router>
-  </Provider>
+<Provider store={store}>
+  <StaticRouter location={location}>
+    <RouteDispatcher routes={routes} reloadOnPropsChange={reloadOnPropsChange} />
+  </StaticRouter>
+</Provider>
 );
 ```
 
+### Contribute
+For questions or issues, please [open an issue](https://github.com/adam-26/react-router-dispatcher/issues), and you're welcome to submit a PR for bug fixes and feature requests.
 
-## Comparing with other libraries
 
-There are some solutions of problem described above:
+### Notice
 
-- [**AsyncProps**](https://github.com/ryanflorence/async-props)
-  It solves the same problem, but it doesn't work with redux state. Also it's significantly more complex inside,
-  because it contains lots of logic to connect data to props.
-  It uses callbacks against promises...
-- [**react-fetcher**](https://github.com/markdalgleish/react-fetcher)
-  It's very simple library too. But it provides you only interface for decorating your components and methods
-  to fetch data for them. It doesn't integrated with React Router or Redux. So, you need to write you custom logic
-  to delay routing transition for example.
-- [**react-resolver**](https://github.com/ericclemmons/react-resolver)
-  Works similar, but isn't integrated with redux.
+This is a fork and major refactor of [redux-connect](https://github.com/makeomatic/redux-connect), that is a fork of [redux-async-connect](https://github.com/Rezonans/redux-async-connect). It also incorporates ideas from [this react + redux boilerplate](https://github.com/CrocoDillon/universal-react-redux-boilerplate), it makes for a great starter kit - its clean and simple.
 
-**Redux Connect** uses awesome [Redux](https://github.com/reactjs/redux) to keep all fetched data in state.
-This integration gives you agility:
 
-- you can react on fetching actions like data loading or load success in your own reducers
-- you can create own middleware to handle Redux Async Connect actions
-- you can connect to loaded data anywhere else, just using simple redux @connect
-- finally, you can debug and see your data using Redux Dev Tools
-
-Also it's integrated with [React Router](https://github.com/rackt/react-router) to prevent routing transition
-until data is loaded.
-
-## Contributors
-- [Vitaly Aminev](https://en.makeomatic.ru)
-- [Todd Bluhm](https://github.com/toddbluhm)
-- [Eliseu Monar](https://github.com/eliseumds)
-- [Rui Araújo](https://github.com/ruiaraujo)
-- [Rodion Salnik](https://github.com/sars)
-- [Rezonans team](https://github.com/Rezonans)
-
-## Collaboration
-You're welcome to PR, and we appreciate any questions or issues, please [open an issue](https://github.com/makeomatic/redux-connect/issues)!
+## License
+MIT

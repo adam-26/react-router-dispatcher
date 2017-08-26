@@ -1,7 +1,9 @@
+// @Flow
 import { matchRoutes } from 'react-router-config';
-import { endGlobalLoad } from '../store';
 
-export const STATIC_ASYNC_METHOD = 'asyncDispatcher';
+export const STATIC_DISPATCHER_METHOD = 'routeDispatcher';
+
+export const REDUCER_NAME = 'routeDispatcher';
 
 /**
  * Tells us if input looks like promise or not
@@ -21,11 +23,15 @@ export function isPromise(obj) {
  * @param  {Object} helpers utilities for dispatching actions
  * @return {Promise}
  */
-export function invokeAsyncDispatchers(routes, store, location, helpers) {
+export function invokeRouteDispatchers(
+  store: Object,
+  routes: Array,
+  location: string,
+  helpers?: mixed) {
   const branch = matchRoutes(routes, location);
   const promises = branch.map(({ route, match }) => {
-    if (route.component[STATIC_ASYNC_METHOD]) {
-      return route.component[STATIC_ASYNC_METHOD](store, match, helpers);
+    if (route.component[STATIC_DISPATCHER_METHOD]) {
+      return route.component[STATIC_DISPATCHER_METHOD](store, match, helpers);
     }
 
     return null;
@@ -36,18 +42,4 @@ export function invokeAsyncDispatchers(routes, store, location, helpers) {
   }
 
   return Promise.all(promises);
-}
-
-/**
- * Helper to load data on server
- * @param  {Array} routes
- * @param  {Object} store
- * @param  {string} location
- * @param  {Object} helpers utilities for dispatching actions
- * @return {Promise}
- */
-export function loadOnServer(routes, store, location, helpers) {
-  return invokeAsyncDispatchers(routes, store, location, helpers).then(() => {
-    store.dispatch(endGlobalLoad());
-  });
 }

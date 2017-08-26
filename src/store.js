@@ -1,5 +1,5 @@
 import { createAction, handleActions } from 'redux-actions';
-import { getMutableState, getImmutableState } from './helpers/state';
+import { getMutableState, getImmutableState } from './state';
 
 export const clearKey = createAction('@redux-dispatcher/CLEAR');
 export const beginGlobalLoad = createAction('@redux-dispatcher/BEGIN_GLOBAL_LOAD');
@@ -35,7 +35,7 @@ export const reducer = handleActions({
     },
   }),
 
-  [loadSuccess]: (state, { payload: { key, data } }) => ({
+  [loadSuccess]: (state, { payload: { key } }) => ({
     ...state,
     loadState: {
       ...state.loadState,
@@ -45,7 +45,6 @@ export const reducer = handleActions({
         error: null,
       },
     },
-    [key]: data,
   }),
 
   [loadFail]: (state, { payload: { key, error } }) => ({
@@ -60,22 +59,21 @@ export const reducer = handleActions({
     },
   }),
 
-  [clearKey]: (state, { payload }) => ({
+  [clearKey]: (state, { payload: { key } }) => ({
     ...state,
     loadState: {
       ...state.loadState,
-      [payload]: {
+      [key]: {
         loading: false,
         loaded: false,
         error: null,
       },
     },
-    [payload]: null,
   }),
 
 }, initialState);
 
-export const immutableReducer = function wrapReducer(immutableState, action) {
+export const createImmutableReducer = function wrapReducer(mutableReducer, immutableState, action) {
   // We need to convert immutable state to mutable state before our reducer can act upon it
   let mutableState;
   if (immutableState === undefined) {
@@ -88,5 +86,9 @@ export const immutableReducer = function wrapReducer(immutableState, action) {
   }
 
   // Run the reducer and then re-convert the mutable output state back to immutable state
-  return getImmutableState(reducer(mutableState, action));
+  return getImmutableState(mutableReducer(mutableState, action));
+};
+
+export const immutableReducer = function wrapReducer(immutableState, action) {
+  return createImmutableReducer(reducer, immutableState, action);
 };

@@ -1,0 +1,64 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+jobs:
+  build:
+    environment:
+      CC_TEST_REPORTER_ID: 7ccff8dbc66aa637b5cb225476a87082bc1e3c35e3771b1b2e1f4e712dac21f5
+    docker:
+      - image: node:8.0
+    working_directory: ~/react-router-dispatcher
+    steps:
+      - checkout
+      - run:
+          name: update-npm
+          command: 'sudo npm install -g npm@latest'
+      - run:
+          name: "Checking Versions"
+          command: |
+            node --version
+            npm --version
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run:
+          name: "npm install"
+          command: npm install
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - run:
+          command: |
+            mkdir -p ~/.build
+            mkdir -p ~/.build/lint
+            mkdir -p ~/.build/coverage
+            mkdir -p ~/.build/test
+          when: always
+      - run:
+          name: lint
+          command: npm run ci-lint
+      - run:
+          name: "install code climate"
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      - run:
+          name: test
+          command: |
+            ./cc-test-reporter before-build
+            npm run ci-jest
+            cp ./.build/coverage.lcov.info ./lcov.info
+            ./cc-test-reporter after-build -t lcov --exit-code $?
+      - store_test_results:
+          path: ~/.build/test/test-report.xml
+      - store_artifacts:
+          path: ~/.build/test
+          prefix: "test"
+      - store_artifacts:
+          path: ~/.build/lint
+          prefix: "lint"
+      - store_artifacts:
+          path: ~/.build/coverage
+          prefix: "coverage"
