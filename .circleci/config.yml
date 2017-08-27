@@ -15,16 +15,16 @@ jobs:
       - run:
           name: update-npm
           command: 'npm install -g npm@latest'
-      - run:
-          name: "Checking Versions"
-          command: |
-            node --version
-            npm --version
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
           name: "npm install"
           command: npm install
+      - run:
+          name: "Checking Versions"
+          command: |
+            node --version
+            npm --version
       - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
