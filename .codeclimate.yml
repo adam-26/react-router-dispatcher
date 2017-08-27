@@ -1,0 +1,26 @@
+
+engines:
+
+  fixme:
+    enabled: true
+
+  nodesecurity:
+    enabled: true
+
+  eslint:
+    enabled: true
+    channel: "eslint-3"
+
+  duplication:
+    enabled: true
+    config:
+      languages:
+      - javascript:
+
+ratings:
+  paths:
+  - "src/**/*"
+  - "**.js"
+
+exclude_paths:
+- "lib/**/*"
