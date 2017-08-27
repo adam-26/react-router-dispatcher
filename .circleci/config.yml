@@ -12,6 +12,9 @@ jobs:
     working_directory: ~/react-router-dispatcher
     steps:
       - checkout
+       run:
+          name: "~/.npmrc"
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
       - run:
           name: "Checking Versions"
           command: |
@@ -60,3 +63,15 @@ jobs:
       - store_artifacts:
           path: ./.build/coverage
           prefix: "coverage"
+      - deploy
+          name: "[Deploy Beta]"
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              git config -l
+              git config user.email ci@circleci
+              git config user.name CircleCI
+
+              ./node_modules/.bin/standard-version --prerelease beta --no-verify
+              git push --follow-tags origin master
+              npm publish
+            fi
