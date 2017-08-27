@@ -7,10 +7,7 @@
   "engines": {
     "node": ">=4"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/adam-26/react-router-dispatcher.git"
-  },
+  "repository": "git+ssh://git@github.com/adam-26/react-router-dispatcher.git",
   "scripts": {
     "build": "rm -rf ./lib; NODE_ENV=production babel ./src -d lib --ignore '__tests__'",
     "lint": "eslint ./src",
