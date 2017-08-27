@@ -13,6 +13,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: "~/.npmrc"
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+      - run:
           name: "Checking Versions"
           command: |
             node --version
@@ -64,7 +67,10 @@ jobs:
           name: Maybe Deploy
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+              git config -l
+              git config user.email ci@circleci
+              git config user.name CircleCI
+
               ./node_modules/.bin/standard-version --prerelease beta --no-verify
               git push --follow-tags origin master
               npm publish
