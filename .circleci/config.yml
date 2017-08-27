@@ -12,11 +12,11 @@ jobs:
     working_directory: ~/react-router-dispatcher
     steps:
       - checkout
-     - run:
-         name: "Checking Versions"
-         command: |
-           node --version
-           npm --version
+      - run:
+          name: "Checking Versions"
+          command: |
+            node --version
+            npm --version
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
