@@ -1,6 +1,6 @@
 {
   "name": "react-router-dispatcher",
-  "version": "1.0.0-beta.9",
+  "version": "1.0.0-beta.10",
   "description": "Async server-side data loader using redux with react-router v4.x.",
   "main": "lib/index.js",
   "module": "src/index.js",
