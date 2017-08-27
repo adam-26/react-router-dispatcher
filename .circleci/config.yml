@@ -48,10 +48,24 @@ jobs:
       - run:
           name: test
           command: |
+            # Prepare the test reporter
             ./cc-test-reporter before-build
+
+            # Run the tests
             npm run ci-jest
+            COVERAGE_EXIT_CODE=$?
+
+            # Copy the coverage file for reporting purposes
             cp ./.build/coverage/lcov.info ./coverage
-            ./cc-test-reporter after-build -t lcov --exit-code $?
+
+            # Prevent errors when re-building on the CI server (reports previously uploaded)
+            set +e
+            ./cc-test-reporter after-build -t lcov --exit-code $COVERAGE_EXIT_CODE
+            REPORTER_EXIT_CODE=$?
+            set -e
+            if [ "$REPORTER_EXIT_CODE" != "0" ] && [ "$REPORTER_EXIT_CODE" != "255" ]; then
+              exit $$REPORTER_EXIT_CODE
+            fi
       - store_test_results:
           path: ./.build/test/test-report.xml
       - store_artifacts:
