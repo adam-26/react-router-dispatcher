@@ -46,7 +46,7 @@ jobs:
           command: |
             ./cc-test-reporter before-build
             npm run ci-jest
-            cp ./.build/coverage.lcov.info ./lcov.info
+            cp ./.build/coverage/lcov.info ./lcov.info
             ./cc-test-reporter after-build -t lcov --exit-code $?
       - store_test_results:
           path: ~/.build/test/test-report.xml
