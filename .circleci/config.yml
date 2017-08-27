@@ -8,8 +8,8 @@ jobs:
     environment:
       CC_TEST_REPORTER_ID: 7ccff8dbc66aa637b5cb225476a87082bc1e3c35e3771b1b2e1f4e712dac21f5
     docker:
-      - image: node:8.0
-    working_directory: ~/react-router-dispatcher
+      - image: node:8.4
+#    working_directory: ~/react-router-dispatcher
     steps:
       - checkout
       - run:
