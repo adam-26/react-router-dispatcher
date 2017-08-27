@@ -57,9 +57,9 @@ Using the concept of **route actions**, loading data for rendering routes with r
 
 Another important concept to understand throughout this documentation is that of a **RouteComponent**.
 
-> For documentation purposes, we will define a **RouteComponent** to be any react component used in the react-router configuration. Only **RouteComponent**'s can dispatch route actions to load data for rendering.
+> For documentation purposes, we will define a **RouteComponent** to be any react component used in the react-router configuration.
 
-At first, this may sound restrictive so it's _important_ to understand that a RouteComponent can invoke `routeDispatcher` methods of child components.
+Only **RouteComponent**'s can dispatch route actions to load data for rendering. At first, this may sound restrictive so it's _important_ to understand that a RouteComponent can invoke `routeDispatcher` methods of child components.
 
 ##### Using react-router v4 server-side
 
@@ -84,7 +84,7 @@ const routes = [{
 }];
 ```
 
-> In the above example, RootComponent, AppComponent and AccountComponent are all considered **RouteCommponet**'s for documentation purposes.
+> In the above example, RootComponent, HomePageRouteComponent and AccountRouteComponent are all considered **RouteCommponet**'s for documentation purposes.
 
 ### Quickstart
 _The quickstart assumes you are very familar with react, redux and react-router_
@@ -99,7 +99,7 @@ import HomePageContainer from './HomePageContainer';
 export default withDispatcher(({dispatch}, {params}) => {
 
   // You MUST return the dispatch response
-  // use the route parameters to dispatch a route action that will load all the data required for this request
+  // dispatch a route action, use route parameters if required
   return dispatch(routeAction(params.urlValue));
 
 })(HomePageContainer);
@@ -179,18 +179,19 @@ app.use('*', (request, response) => {
   // - add reducers, middleware
   // - include 'routerMiddleware' from react-router-redux
   const store = createStore(...);
+  const reactRouterContext = {};
   const location = request.url;
-
-  const serverApp = (
-    <Provider store={store}>
-      <StaticRouter location={location} context={reactRouterContext}>
-        <RouteDispatcher routes={routes} />
-      </StaticRouter>
-    </Provider>
-  );
 
   // This asynchronously loads all data before rendering
   dispatchOnServer(store, routes, location).then(() => {
+
+    const serverApp = (
+      <Provider store={store}>
+        <StaticRouter location={location} context={reactRouterContext}>
+          <RouteDispatcher routes={routes} />
+        </StaticRouter>
+      </Provider>
+    );
 
     // ...simplied rendering code
     const renderedApp = renderToString(serverApp);
@@ -238,7 +239,9 @@ dispatchOnServer(store, routes, location, {}).then(() => {
 
   // #4. Render after the saga promise is done
   sagaPromise.done.then(() => {
-    render(<App store={store} routes={routes} location={location} />, htmlElement);
+
+    // ... render the application here
+
   });
 });
 ```
@@ -280,7 +283,7 @@ export default withDispatcher((store, match) => {
     Header.routeDispacther(store, match),
     Catalogue.routeDispacther(store, match)
   ]);
-})(CatalogueComponent);
+})(CatalogueRouteComponent);
 
 ```
 
@@ -389,6 +392,8 @@ export const Root = ({ store, history }) => (
 
 ### Contribute
 For questions or issues, please [open an issue](https://github.com/adam-26/react-router-dispatcher/issues), and you're welcome to submit a PR for bug fixes and feature requests.
+
+Before submitting a PR, ensure you run `npm test` to verify that your coe adheres to the configured lint rules and passes all tests. Be sure to include unit tests for any code changes or additions.
 
 
 ### Notice

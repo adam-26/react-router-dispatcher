@@ -3,5 +3,11 @@
 scripts
 .idea
 .circleci
-docs
+docs/
+src/
+.build/
+coverage/
+jest_*/
+.codeclimate.yml
+cc-test-reporter
 __tests__
