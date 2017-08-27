@@ -6,7 +6,7 @@ version: 2
 jobs:
   build:
     environment:
-      CC_TEST_REPORTER_ID: 7ccff8dbc66aa637b5cb225476a87082bc1e3c35e3771b1b2e1f4e712dac21f5
+      CC_TEST_REPORTER_ID: 0b974da9715502db1fb0a919505f7ac77cdea995479b81fd25cbc38cc52fed2a
     docker:
       - image: node:8.4
     working_directory: ~/react-router-dispatcher
