@@ -1,6 +1,6 @@
 {
   "name": "react-router-dispatcher",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.0",
   "description": "Async server-side data loader using redux with react-router v4.x.",
   "main": "lib/index.js",
   "module": "src/index.js",
@@ -14,9 +14,8 @@
     "ci-jest": "TEST_REPORT_PATH=./.build/test jest --ci --coverage --coverageDirectory ./.build/coverage --testResultsProcessor='./node_modules/jest-junit-reporter'",
     "ci-lint": "eslint ./src --format junit --output-file ./.build/lint/eslint.xml",
     "test": "npm run lint && jest",
-    "preversion": "npm test",
-    "postversion": "npm publish && git push && git push --tags",
-    "prepublish": "npm run lint && npm run build"
+
+    "release": "standard-version --prerelease beta --no-verify"
   },
   "keywords": [
     "redux",
@@ -75,7 +74,8 @@
     "redux-immutable": "^4.0.0",
     "redux-saga": "^0.15.6",
     "redux-thunk": "^2.2.0",
-    "sinon": "^2.1.0"
+    "sinon": "^2.1.0",
+    "standard-version": "^4.2.0"
   },
   "dependencies": {
     "babel-runtime": "^6.20.0",
