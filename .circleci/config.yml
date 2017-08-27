@@ -75,3 +75,4 @@ jobs:
               git push --follow-tags origin master
               npm publish
             fi
+

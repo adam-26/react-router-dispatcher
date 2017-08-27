@@ -1,5 +1,7 @@
 # react-router-dispatcher
 -------
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
+
 Enables async data to be loaded using redux _before_ react rendering on both **server** and **client** environments, using:
  * [react](https://facebook.github.io/react/)
  * [redux](http://redux.js.org/)
