@@ -24,3 +24,4 @@ ratings:
 
 exclude_paths:
 - "lib/**/*"
+- "__tests__/**/*"
