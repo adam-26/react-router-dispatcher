@@ -14,7 +14,7 @@ jobs:
       - checkout
       - run:
           name: update-npm
-          command: 'sudo npm install -g npm@latest'
+          command: 'npm install -g npm@latest'
       - run:
           name: "Checking Versions"
           command: |
