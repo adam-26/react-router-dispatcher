@@ -85,7 +85,8 @@ jobs:
               git config user.email ci@circleci
               git config user.name CircleCI
 
-              ./node_modules/.bin/standard-version --prerelease beta --no-verify
+              # Tag the release, update package.json version and changelog, commit and push to github.
+              ./node_modules/.bin/standard-version --prerelease beta --no-verify -m "chore(release): %s. [skip ci]"
               git push --follow-tags origin master
               npm publish
             fi
