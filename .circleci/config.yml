@@ -60,3 +60,12 @@ jobs:
       - store_artifacts:
           path: ./.build/coverage
           prefix: "coverage"
+      - deploy:
+          name: Maybe Deploy
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+              ./node_modules/.bin/standard-version --prerelease beta --no-verify
+              git push --follow-tags origin master
+              npm publish
+            fi
