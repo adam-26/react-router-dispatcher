@@ -4,6 +4,9 @@
   "description": "Async server-side data loader using redux with react-router v4.x.",
   "main": "lib/index.js",
   "module": "src/index.js",
+  "engines": {
+    "node": ">=4"
+  },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/adam-26/react-router-dispatcher.git"
@@ -67,6 +70,7 @@
     "react-addons-test-utils": "^15.4.1",
     "react-dom": "^15.4.1",
     "react-redux": "^5.0.6",
+    "react-router": "^4.2.0",
     "react-router-config": "^1.0.0-beta.4",
     "react-router-dom": "^4.2.2",
     "react-test-renderer": "^15.5.4",

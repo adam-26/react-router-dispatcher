@@ -26,7 +26,7 @@ yarn install react-router-dispatcher
 
 ### Introduction
 
-This package uses redux _route actions_ to load (async) data on the server and client, it has been tested using _redux-thunk_ and _redux-saga_. This approach maintains consistancy across your project.
+This package uses redux _route actions_ to load (async) data on the server and client, it has been tested using _redux-thunk_ and _redux-saga_.
 
 > for documentation purposes, we define a **route action** to be a redux action that is responsible for loading the data required to render a specific route.
 
@@ -44,7 +44,7 @@ const routes = [{
   routes: [{
     path: '/',
     exact: true,
-    component: AppComponent,
+    component: HomePageComponent,
     routes: [{
       path: '/account',
       exact: true,
@@ -56,7 +56,7 @@ const routes = [{
 
 > For documentation purposes, we will define a **RouteComponent** to be any react component used in the route configuration. Only **RouteComponent**'s can initiate dispatch actions to load data for rendering.
 
-> In the above example, RootComponent, AppComponent and AccountComponent are all considered **RouteCommponet**'s for documentation purposes.
+> In the above example, RootComponent, HomePageComponent and AccountComponent are all considered **RouteCommponet**'s for documentation purposes.
 
 At first, this may sound restrictive so it's _important_ to understand that a RouteComponent can invoke `routeDispatcher` methods of child components.
 
@@ -71,7 +71,7 @@ import { withDispatcher } from 'react-router-dispatcher';
 export default withDispatcher(({dispatch}, {params}) => {
 
   // You MUST return the dispatch response
-  // use the route parameters to dispatch a route action that will load all the data required for this request
+  // use the route parameters to dispatch a route action
   return dispatch(routeAction(params.urlValue));
 
 })(RouteComponent);
@@ -82,27 +82,7 @@ It's recommended that `withDispatcher` dispatch actions using _redux middleware_
 
 Because `withDispatcher` is invoked before the RouteComponent is rendered, the standard redux `mapStateToProps` can be used by the RouteComponent to configure access to the required data from the redux store.
 
-Then, configure your application to use the `RouteDispatcher` component:
-
-```js
-import Provider from 'redux';
-import { StaticRouter } from 'react-router';
-import RouteDispatcher from 'react-router-dispatcher';
-
-export default class AppComponent extends React.Component {
-
-  // propTypes, etc...
-
-  render() {
-    const {store, routes, location} = this.props;
-    return (
-      <RouteDispatcher routes={routes} />
-    );
-  }
-}
-```
-
-The `RouteDispatcher` will ensure all RouteComponent dispatchers are processed before rendering.
+Then, configure your application to use the `RouteDispatcher` component, it will ensure all RouteComponent dispatchers are processed before rendering.
 
 Configure the client to render the app using react-router-redux `ConnectedRouter`, it uses redux to maintain router state:
 
@@ -133,10 +113,11 @@ const clientApp = (
 render(clientApp, htmlElement);
 ```
 
-Render the `App` on the server using react-routers `StaticRouter`:
+Render the App on the server using react-routers `StaticRouter`:
 
 ```js
 // server.js - expressjs example
+import express from 'express';
 import { renderToString, renderToStaticMarkup } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom';
 import { createStore } from 'redux';
@@ -144,6 +125,8 @@ import { Provider } from 'react-redux';
 import { routerMiddleware } from 'react-router-redux';
 import RouteDispatcher, { dispatchOnServer } from 'react-router-dispatcher';
 import routes from '...';
+
+const app = express();
 
 app.use('*', (request, response) => {
 

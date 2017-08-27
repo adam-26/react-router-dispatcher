@@ -2,6 +2,6 @@
 .eslintrc
 scripts
 .idea
-circleci
+.circleci
 docs
 __tests__
