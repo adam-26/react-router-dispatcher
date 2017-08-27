@@ -28,10 +28,11 @@ jobs:
             - ./node_modules
       - run:
           command: |
-            mkdir -p ~/.build
-            mkdir -p ~/.build/lint
-            mkdir -p ~/.build/coverage
-            mkdir -p ~/.build/test
+            mkdir -p ./.build
+            mkdir -p ./.build/lint
+            mkdir -p ./.build/coverage
+            mkdir -p ./.build/test
+            mkdir -p ./coverage
           when: always
       - run:
           name: lint
@@ -46,16 +47,16 @@ jobs:
           command: |
             ./cc-test-reporter before-build
             npm run ci-jest
-            cp ./.build/coverage/lcov.info ./lcov.info
+            cp ./.build/coverage/lcov.info ./coverage
             ./cc-test-reporter after-build -t lcov --exit-code $?
       - store_test_results:
-          path: ~/.build/test/test-report.xml
+          path: ./.build/test/test-report.xml
       - store_artifacts:
-          path: ~/.build/test
+          path: ./.build/test
           prefix: "test"
       - store_artifacts:
-          path: ~/.build/lint
+          path: ./.build/lint
           prefix: "lint"
       - store_artifacts:
-          path: ~/.build/coverage
+          path: ./.build/coverage
           prefix: "coverage"
