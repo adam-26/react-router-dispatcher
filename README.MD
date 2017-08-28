@@ -69,6 +69,9 @@ Unlike some other [react-router v4.x](https://reacttraining.com/react-router/web
 
 Here is an example react-router v4.x route configuration:
 ```js
+// routes.js
+import { renderRoutes } from 'react-router-config'
+
 const routes = [{
   component: RootComponent,
   routes: [{
@@ -82,9 +85,20 @@ const routes = [{
     }]
   }]
 }];
+
+const RootComponent = ({ route }) => (
+  <div>
+    {/* child routes won't render without this */}
+    {renderRoutes(route.routes)}
+  </div>
+)
+
+export default routes;
 ```
 
 > In the above example, RootComponent, HomePageRouteComponent and AccountRouteComponent are all considered **RouteCommponet**'s for documentation purposes.
+
+Read the [react router documentation](https://github.com/ReactTraining/react-router/tree/master/packages/react-router-config) for more information about defining routes, and an explanation on rendering child routes.
 
 ### Quickstart
 _The quickstart assumes you are very familar with react, redux and react-router_
@@ -135,19 +149,33 @@ Configure the client to render the app using react-router-redux `ConnectedRouter
 // client.js
 import React from 'react';
 import { render } from 'react-dom';
-import { createStore } from 'redux';
+import { createStore, combineReducers, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
-import { ConnectedRouter, routerMiddleware } from 'react-router-redux';
-import RouteDispatcher from 'react-router-dispatcher';
+import { ConnectedRouter, routerMiddleware, routerReducer } from 'react-router-redux';
+import RouteDispatcher, { reducer as routeDispatcherReducer } from 'react-router-dispatcher';
 import createBrowserHistory from 'history/createBrowserHistory';
-import routes from '...';
+import reducers from '...'; // your reducers
+import routes from '...'; // your route config
 
-const history = createBrowserHistory();
 const supportsHistory = 'pushState' in window.history;
+
+// create the redux router middleware
+const history = createBrowserHistory();
+const reduxRouterMiddleware = routerMiddleware(history);
+
 // create redux store
-// - include 'routerMiddleware' from react-router-redux
 // - if it was rendered on the server, assign the initial state created on the server to the redux store
-const store = createStore(...);
+const preloadedReduxState = window.__REDUX_STATE__ || {};
+
+const store = createStore(
+  combineReducers({
+    ...reducers,
+    router: routerReducer,
+    routeDispatcher: routeDispatcherReducer
+  }),
+  preloadedReduxState,
+  applyMiddleware(reduxRouterMiddleware, /* thunk or saga */)
+);
 
 const clientApp = (
   <Provider store={store}>
@@ -167,20 +195,35 @@ Render the application on the server using the react-router `StaticRouter`, invo
 // server.js - expressjs example
 import { renderToString, renderToStaticMarkup } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom';
-import { createStore } from 'redux';
+import { createStore, combineReducers, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
-import { routerMiddleware } from 'react-router-redux';
-import RouteDispatcher, { dispatchOnServer } from 'react-router-dispatcher';
-import routes from '...';
+import { routerMiddleware, routerReducer } from 'react-router-redux';
+import RouteDispatcher, { dispatchOnServer, reducer as routeDispatcherReducer } from 'react-router-dispatcher';
+import createMemoryHistory from 'history/createMemoryHistory';
+import serialize from 'serialize-javascript';
+import reducers from '...'; // your reducers
+import routes from '...'; // your route config
 
 app.use('*', (request, response) => {
 
-  // create redux store
-  // - add reducers, middleware
-  // - include 'routerMiddleware' from react-router-redux
-  const store = createStore(...);
   const reactRouterContext = {};
   const location = request.url;
+
+  // create the redux router middleware
+  // NOTE: use of 'MemoryHistory' on server
+  const history = createMemoryHistory();
+  const reduxRouterMiddleware = routerMiddleware(history);
+
+  // create the redux store
+  const store = createStore(
+    combineReducers({
+      ...reducers,
+      router: routerReducer,
+      routeDispatcher: routeDispatcherReducer
+    }),
+    preloadedReduxState,
+    applyMiddleware(reduxRouterMiddleware, /* thunk or saga */)
+  );
 
   // This asynchronously loads all data before rendering
   dispatchOnServer(store, routes, location).then(() => {
@@ -193,9 +236,10 @@ app.use('*', (request, response) => {
       </Provider>
     );
 
-    // ...simplied rendering code
+    // ...simple rendering code
+    // includes writing redux state for client hydration
     const renderedApp = renderToString(serverApp);
-    const html = renderToStaticMarkup(`<html><body>${renderedApp}</body></html>`);
+    const html = renderToStaticMarkup(`<html><head><script type="text/javascript" dangerouslySetInnerHTML={{ __html: `window.__REDUX_STATE__=${serialize(store.getState())}` }}></script></head><body>${renderedApp}</body></html>`);
     response.status(200).send(`<!DOCTYPE html>${html}`);
   });
 });
