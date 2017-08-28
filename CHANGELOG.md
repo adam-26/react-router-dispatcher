@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.0.0-beta.15"></a>
+# [1.0.0-beta.15](https://github.com/adam-26/react-router-dispatcher/compare/v1.0.0-beta.14...v1.0.0-beta.15) (2017-08-28)
+
+
+
 <a name="1.0.0-beta.14"></a>
 # [1.0.0-beta.14](https://github.com/adam-26/react-router-dispatcher/compare/v1.0.0-beta.13...v1.0.0-beta.14) (2017-08-28)
 
