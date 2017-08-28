@@ -1,21 +1,22 @@
 import Promise from 'bluebird';
 import React from 'react';
-import { Provider, connect } from 'react-redux';
+import { Provider } from 'react-redux';
 import { createStore, combineReducers, applyMiddleware } from 'redux';
 import { combineReducers as combineImmutableReducers } from 'redux-immutable';
 import { mount, render } from 'enzyme';
 import { spy } from 'sinon';
 import Immutable from 'immutable';
+import { routerReducer } from 'react-router-redux';
 import { renderRoutes } from 'react-router-config';
 import { StaticRouter, MemoryRouter } from 'react-router-dom';
 import thunk from 'redux-thunk';
 import createSagaMiddleware, { END, takeEvery, delay } from 'redux-saga';
 import { call, all, put } from 'redux-saga/effects';
-import { setToImmutableStateFunc, setToMutableStateFunc } from '../src/state';
 
 // import module
+import { setToImmutableStateFunc, setToMutableStateFunc } from '../src/state';
 import { endGlobalLoad, beginGlobalLoad, createImmutableReducer } from '../src/store';
-import RouteDispatchComponent from '../src/components/RouteDispatcherComponent';
+import { createRouteDispatcher } from '../src/containers/RouteDispatcher';
 import {
   connectDispatcher,
   reducer as asyncDispatcherReducer,
@@ -25,6 +26,7 @@ import {
 
 describe('<RouteDispatcher />', function suite() {
   const initialState = {
+    router: {},
     routeDispatcher: { loaded: false, loadState: {}, $$external: 'supported' },
     testData: { value: null },
   };
@@ -75,10 +77,7 @@ describe('<RouteDispatcher />', function suite() {
   const mockAsyncActionSpy = spy(mockAsyncAction);
   const mockNestedAsyncActionSpy = spy(mockNestedAsyncAction);
 
-  const RouteDispatcher = connect(null, {
-    beginGlobalLoad: beginGlobalLoadSpy,
-    endGlobalLoad: endGlobalLoadSpy,
-  })(RouteDispatchComponent);
+  const RouteDispatcher = createRouteDispatcher(beginGlobalLoadSpy, endGlobalLoadSpy);
 
   const RootComponent = ({ route }) => (
     <div>
@@ -143,6 +142,7 @@ describe('<RouteDispatcher />', function suite() {
 
   const RegularComponent = () => <div>Hi, I do not use @asyncConnect</div>;
   const reducers = combineReducers({
+    router: routerReducer,
     routeDispatcher: asyncDispatcherReducer,
     testData: testDataReducer,
     nestedRouteData: nestedRouteDataReducer,

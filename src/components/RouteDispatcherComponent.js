@@ -1,18 +1,25 @@
 import { Component } from 'react';
+import invariant from 'invariant';
 import PropTypes from 'prop-types';
 import { renderRoutes } from 'react-router-config';
 import { invokeRouteDispatchers, REDUCER_NAME } from '../utils';
 import { getMutableState } from '../state';
 
-function getRoutePathAndQuery({ router: { route: { location } } }) {
-  return `${location.pathname}${location.search}${location.hash}`;
+function getRoutePathAndQuery(location, router) {
+  // location is populated from the redux store, however on initial render
+  // the router store may be empty, grab the location from the router context
+  const locationSource = location || (router.route && router.route.location);
+  invariant(locationSource, '<RouteDispatcher /> has not been assigned a location');
+  return `${locationSource.pathname}${locationSource.search}${locationSource.hash}`;
 }
 
-function filterPropsToState(props, context) {
-  const { routes } = props;
+function filterPropsToState(props, ctx) {
+  const { location } = props;
+  const { router } = ctx;
   return {
-    routes,
-    location: getRoutePathAndQuery(context),
+    // may need to include 'routes' from props as state?
+    // if routes are dynamically assigned, this is probably required for render()
+    pathAndQuery: getRoutePathAndQuery(location, router),
   };
 }
 
@@ -24,21 +31,27 @@ export default class RouteDispatcherComponent extends Component {
     beginGlobalLoad: PropTypes.func.isRequired,
     endGlobalLoad: PropTypes.func.isRequired,
     reducerName: PropTypes.string,
-    routes: PropTypes.array.isRequired,
     helpers: PropTypes.any,
+    routes: PropTypes.array.isRequired,
+    location: PropTypes.object,
     /* eslint-enable */
   };
 
   static contextTypes = {
     store: PropTypes.object.isRequired,
-    router: PropTypes.object.isRequired,
+    router: PropTypes.shape({
+      route: PropTypes.shape({
+        location: PropTypes.object,
+      }),
+    }).isRequired,
   };
 
   static defaultProps = {
     helpers: {},
+    location: null,
     reducerName: REDUCER_NAME,
-    reloadOnPropsChange({ state, nextContext }) {
-      return state.location !== getRoutePathAndQuery(nextContext);
+    reloadOnPropsChange({ location }, { router }) {
+      return this.state.pathAndQuery !== getRoutePathAndQuery(location, router);
     },
     render(routes) {
       return renderRoutes(routes);
@@ -60,25 +73,19 @@ export default class RouteDispatcherComponent extends Component {
 
     // we dont need it if we already made it on server-side
     if (!dataLoaded) {
-      this.loadAsyncData(this.props);
+      this.loadAsyncData(this.props, this.context);
     }
   }
 
   componentWillReceiveProps(nextProps, nextContext) {
     // Allow a user supplied function to determine if an async reload is necessary
-    if (this.props.reloadOnPropsChange({
-      state: this.state,
-      props: this.props,
-      context: this.context,
-      nextProps,
-      nextContext,
-    })) {
-      this.loadAsyncData(nextProps);
+    if (this.props.reloadOnPropsChange.call(this, nextProps, nextContext)) {
+      this.loadAsyncData(nextProps, nextContext);
     }
   }
 
   shouldComponentUpdate(nextProps, nextState) {
-    return this.state.location !== nextState.location;
+    return this.state.pathAndQuery !== nextState.pathAndQuery;
   }
 
   componentWillUnmount() {
@@ -102,37 +109,38 @@ export default class RouteDispatcherComponent extends Component {
 
   isLoaded() {
     const { reducerName } = this.props;
-    return getMutableState(this.context.store.getState())[reducerName].loaded === true;
+    const { store } = this.context;
+    return getMutableState(store.getState())[reducerName].loaded === true;
   }
 
-  loadAsyncData(props) {
+  loadAsyncData(props, context) {
     const self = this;
-    const { store } = self.context;
-    const { routes, helpers, beginGlobalLoad, endGlobalLoad } = props;
+    const { store, router } = context;
+    const { routes, location, helpers, beginGlobalLoad, endGlobalLoad } = props;
 
-    const pathAndQuery = getRoutePathAndQuery(self.context);
+    const pathAndQuery = getRoutePathAndQuery(location, router);
     const dispatcherPromise = invokeRouteDispatchers(store, routes, pathAndQuery, helpers);
 
     self.currentLocation = pathAndQuery;
     self.startLoad(beginGlobalLoad);
-    return ((prps, ctx, loadDataLocation, endGlobalLoadFn) => dispatcherPromise.then(() => {
+    return ((fnProps, fnCtx, loadDataLocation, endGlobalLoadFn) => dispatcherPromise.then(() => {
       // We need to update state only if loadAsyncData that called this promise
       // is the same location as loadAsyncData method. Otherwise we can face a situation
       // when user is changing route several times and we finally show them route that has
       // loaded props last time and not the last called route
       if (self.currentLocation === loadDataLocation && self.mounted !== false) {
-        self.setState(filterPropsToState(prps, ctx));
+        self.setState(filterPropsToState(fnProps, fnCtx));
       }
 
       self.endLoad(endGlobalLoadFn);
     }, (err) => {
       self.endLoad(endGlobalLoadFn);
       return Promise.reject(err);
-    }))(props, self.context, pathAndQuery, endGlobalLoad);
+    }))(props, context, pathAndQuery, endGlobalLoad);
   }
 
   render() {
-    const { routes } = this.state;
+    const { routes } = this.props;
     if (Array.isArray(routes)) {
       return this.props.render(routes);
     }
