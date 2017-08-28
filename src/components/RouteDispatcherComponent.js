@@ -4,8 +4,6 @@ import { renderRoutes } from 'react-router-config';
 import { invokeRouteDispatchers, REDUCER_NAME } from '../utils';
 import { getMutableState } from '../state';
 
-// NOTE: not using 'withRouter' avoids the need to add 'react-router-dom' as a dependency
-
 function getRoutePathAndQuery({ router: { route: { location } } }) {
   return `${location.pathname}${location.search}${location.hash}`;
 }
