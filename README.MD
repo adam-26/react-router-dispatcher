@@ -53,14 +53,14 @@ Use the `withDispatcher` method to assign a _route dispatcher_ to a RouteCompone
 // HomePageRouteComponent.js
 import { withDispatcher } from 'react-router-dispatcher';
 import { homePageRouteAction } from './actions';
-import HomePageRouteContainer from './HomePageRouteContainer';
+import HomePageContainer from './HomePageContainer';
 
 export default withDispatcher(({dispatch}, {params}) => {
 
   // dispatch a redux route action and return the response
   return dispatch(homePageRouteAction(params.urlValue));
 
-})(HomePageRouteContainer);
+})(HomePageContainer);
 
 ```
 
@@ -84,7 +84,7 @@ export default ({store, routes, history}) => {
 }
 ```
 
-Render the app. On the server, you **must** use the `MemoryHistory` and set the `initialEntries:` value to the request url. Invoke `dispatchOnServer()` to asynchronously load data before rendering:
+Render the app. On the server, you **must** use the `createMemoryHistory` and set the `initialEntries:` value to the request url. Invoke `dispatchOnServer()` to asynchronously load data before rendering:
 
 ```js
 import { dispatchOnServer } from 'react-router-dispatcher';
@@ -136,7 +136,6 @@ Unlike some other [react-router v4.x](https://reacttraining.com/react-router/web
 Here is an example react-router v4.x route configuration:
 ```js
 // routes.js
-import { renderRoutes } from 'react-router-config'
 
 const routes = [{
   component: RootComponent,
@@ -152,13 +151,6 @@ const routes = [{
   }]
 }];
 
-const RootComponent = ({ route }) => (
-  <div>
-    {/* child routes won't render without this */}
-    {renderRoutes(route.routes)}
-  </div>
-)
-
 export default routes;
 ```
 
@@ -169,7 +161,7 @@ Read the [react router documentation](https://github.com/ReactTraining/react-rou
 ### Walk Through Example
 _The example assumes you are familar with react, redux and react-router_
 
-Use the `withDispatcher` method to assign a _route dispatcher_ to a RouteComponent:
+Use the `withDispatcher` method to assign a _route dispatcher_ to a RouteComponent. Dispatch the route action(s) that will load all data required for rendering the route:
 ```js
 // HomePageRouteComponent.js
 import { withDispatcher } from 'react-router-dispatcher';
@@ -179,7 +171,7 @@ import HomePageContainer from './HomePageContainer';
 export default withDispatcher(({dispatch}, {params}) => {
 
   // You MUST return the dispatch response
-  // dispatch a route action, use route parameters if required
+  // Dispatch a route action, use route parameters if required
   return dispatch(routeAction(params.urlValue));
 
 })(HomePageContainer);
@@ -233,6 +225,8 @@ export default ({store, routes, history}) => {
 }
 ```
 
+When rendering for the browser, use the `createBrowserHistory`:
+
 ```js
 // client.js
 import React from 'react';
@@ -268,7 +262,7 @@ const store = createStore(
 render(<App store={store} routes={routes} history={history} />, htmlElement);
 ```
 
-Render the application on the server invoking `dispatchOnServer` to asynchrously populate the redux store before rendering.
+Render the application on the server using `createMemoryHistory` and invoke `dispatchOnServer` to asynchrously populate the redux store before rendering.
 
 ```js
 // server.js - expressjs example
