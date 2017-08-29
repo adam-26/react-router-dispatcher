@@ -31,7 +31,7 @@ _The documentation is much easier to [read on github, click here to view the doc
 ------
 
 
-##### Install
+#### Install
 Install using NPM:
 
 ```
@@ -335,7 +335,7 @@ It's important to understand that a `RouteContainer` should **only** be used lik
 
 ### Advanced Usage
 
-Server-side rendering using _redux-saga_:
+##### Server-side rendering using _redux-saga_:
 
 ```js
 // #1. create the redux store
@@ -369,7 +369,7 @@ export default withDispatcher(({dispatch}, {params}) => {
 })(RouteComponent);
 ```
 
-Dispatching child component a RouteComponent `routeDispatcher`:
+##### Dispatching child component a RouteComponent `routeDispatcher`:
 
 ```js
 import { Component } from 'react';
@@ -397,6 +397,49 @@ export default withDispatcher((store, match) => {
   ]);
 })(CatalogueRouteComponent);
 
+```
+
+##### Webpack Hot Module Reloading (HMR):
+
+When configuring the client for HMR, you must update both the root application component **and the route configuration**.
+
+```js
+// client.js
+import { AppContainer } from 'react-hot-loader'
+// import store, routes, history...
+
+function renderApp(ApplicationComponent, store, routes) {
+  render(
+    <AppContainer>
+      <ApplicationComponent store={store} routes={routes} history={history} />
+    </AppContainer>
+    , document.querySelector('#app'));
+}
+
+function loadApp(store) {
+
+  // initial render
+  renderApp(App, store, routes);
+
+  // The following is needed so that we can support hot reloading our application.
+  if (process.env.NODE_ENV === 'development' && module.hot) {
+
+    function reloadApp() {
+      // Ensure both the App and routes are updated
+      renderApp(require('../shared/app/App').default, store, require('../shared/routes').default);
+    }
+
+    // Changes to this file trigger reloading.
+    module.hot.accept('./client.js');
+
+    // Any changes to the App or routes will cause a re-render.
+    module.hot.accept('../shared/routes', () => reloadApp());
+    module.hot.accept('../shared/app/App', () => reloadApp());
+  }
+}
+
+// perform initial render
+loadApp(store);
 ```
 
 ## API
