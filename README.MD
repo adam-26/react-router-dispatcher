@@ -44,6 +44,72 @@ Install using Yarn:
 yarn install react-router-dispatcher
 ```
 
+### Quick Start
+
+>_For more information, read the introduction below._
+
+Use the `withDispatcher` method to assign a _route dispatcher_ to a RouteComponent:
+```js
+// HomePageRouteComponent.js
+import { withDispatcher } from 'react-router-dispatcher';
+import { homePageRouteAction } from './actions';
+import HomePageRouteContainer from './HomePageRouteContainer';
+
+export default withDispatcher(({dispatch}, {params}) => {
+
+  // dispatch a redux route action and return the response
+  return dispatch(homePageRouteAction(params.urlValue));
+
+})(HomePageRouteContainer);
+
+```
+
+Configure your application root using `ConnectedRouter` and `RouteDispatcher`, these use the redux `Provider` store:
+
+```js
+// App.js
+import React from 'react';
+import { Provider } from 'react-redux';
+import { ConnectedRouter } from 'react-router-redux';
+import RouteDispatcher from 'react-router-dispatcher';
+
+export default ({store, routes, history}) => {
+  return (
+    <Provider store={store}>
+      <ConnectedRouter history={history}>
+        <RouteDispatcher routes={routes} />
+      </ConnectedRouter>
+    </Provider>
+  );
+}
+```
+
+Render the app. On the server, you **must** use the `MemoryHistory` and set the `initialEntries:` value to the request url. Invoke `dispatchOnServer()` to asynchronously load data before rendering:
+
+```js
+import { dispatchOnServer } from 'react-router-dispatcher';
+import createMemoryHistory from 'history/createMemoryHistory';
+
+// from web sever route, express js or similar
+
+const location = req.url;
+const history = createMemoryHistory({ initialEntries: [ location ] });
+
+const store = ...; // create the redux store
+
+  // Asynchronously load the data before rendering
+dispatchOnServer(store, routes, location).then(() => {
+
+  const renderedApp = renderToString(<App store={store} routes={routes} history={history} />);
+
+  const reduxState = store.getState();
+  // inspect reduxState to determine if the request needs to be redirected, or return a 404
+
+  // write the application to the response
+});
+
+```
+
 
 ### Introduction
 
@@ -100,8 +166,8 @@ export default routes;
 
 Read the [react router documentation](https://github.com/ReactTraining/react-router/tree/master/packages/react-router-config) for more information about defining routes, and an explanation on rendering child routes.
 
-### Quickstart
-_The quickstart assumes you are very familar with react, redux and react-router_
+### Walk Through Example
+_The example assumes you are familar with react, redux and react-router_
 
 Use the `withDispatcher` method to assign a _route dispatcher_ to a RouteComponent:
 ```js
@@ -143,7 +209,29 @@ export default connect(mapStateToProps)(HomePageComponent);
 
 Then, configure your application to use the `RouteDispatcher` component, it will ensure all RouteComponent dispatchers are processed before rendering.
 
-Configure the client to render the app using react-router-redux `ConnectedRouter`, it uses redux to maintain router state:
+Configure the the app to use the react-router-redux `ConnectedRouter`, it uses redux to maintain router state:
+
+```js
+// App.js
+import React from 'react';
+import { Provider } from 'react-redux';
+import { ConnectedRouter } from 'react-router-redux';
+import RouteDispatcher from 'react-router-dispatcher';
+
+export default ({store, routes, history}) => {
+
+  // Does the environment support HTML 5 history
+  const supportsHistory = typeof window !== 'undefined' && 'pushState' in window.history;
+
+  return (
+    <Provider store={store}>
+      <ConnectedRouter history={history} forceRefresh={!supportsHistory}>
+        <RouteDispatcher routes={routes} />
+      </ConnectedRouter>
+    </Provider>
+  );
+}
+```
 
 ```js
 // client.js
@@ -154,10 +242,9 @@ import { Provider } from 'react-redux';
 import { ConnectedRouter, routerMiddleware, routerReducer } from 'react-router-redux';
 import RouteDispatcher, { reducer as routeDispatcherReducer } from 'react-router-dispatcher';
 import createBrowserHistory from 'history/createBrowserHistory';
+import App from './App.js';
 import reducers from '...'; // your reducers
 import routes from '...'; // your route config
-
-const supportsHistory = 'pushState' in window.history;
 
 // create the redux router middleware
 const history = createBrowserHistory();
@@ -177,41 +264,32 @@ const store = createStore(
   applyMiddleware(reduxRouterMiddleware, /* thunk or saga */)
 );
 
-const clientApp = (
-  <Provider store={store}>
-    <ConnectedRouter history={history} forceRefresh={!supportsHistory}>
-      <RouteDispatcher routes={routes} />
-    </ConnectedRouter>
-  </Provider>
-);
-
 // Render the app to the browser
-render(clientApp, htmlElement);
+render(<App store={store} routes={routes} history={history} />, htmlElement);
 ```
 
-Render the application on the server using the react-router `StaticRouter`, invoke `dispatchOnServer` to asynchrously populate the redux store before rendering.
+Render the application on the server invoking `dispatchOnServer` to asynchrously populate the redux store before rendering.
 
 ```js
 // server.js - expressjs example
 import { renderToString, renderToStaticMarkup } from 'react-dom/server';
-import { StaticRouter } from 'react-router-dom';
 import { createStore, combineReducers, applyMiddleware } from 'redux';
-import { Provider } from 'react-redux';
 import { routerMiddleware, routerReducer } from 'react-router-redux';
-import RouteDispatcher, { dispatchOnServer, reducer as routeDispatcherReducer } from 'react-router-dispatcher';
+import { dispatchOnServer, reducer as routeDispatcherReducer } from 'react-router-dispatcher';
 import createMemoryHistory from 'history/createMemoryHistory';
 import serialize from 'serialize-javascript';
+import App from './App.js';
 import reducers from '...'; // your reducers
 import routes from '...'; // your route config
 
 app.use('*', (request, response) => {
 
-  const reactRouterContext = {};
   const location = request.url;
 
+  // IMPORTANT: use 'MemoryHistory' on server and set the initial entry
+  const history = createMemoryHistory({ initialEntries: [ location ] });
+
   // create the redux router middleware
-  // NOTE: use of 'MemoryHistory' on server
-  const history = createMemoryHistory();
   const reduxRouterMiddleware = routerMiddleware(history);
 
   // create the redux store
@@ -225,27 +303,21 @@ app.use('*', (request, response) => {
     applyMiddleware(reduxRouterMiddleware, /* thunk or saga */)
   );
 
-  // This asynchronously loads all data before rendering
+  // Asynchronously load all data before rendering
   dispatchOnServer(store, routes, location).then(() => {
 
-    const serverApp = (
-      <Provider store={store}>
-        <StaticRouter location={location} context={reactRouterContext}>
-          <RouteDispatcher routes={routes} />
-        </StaticRouter>
-      </Provider>
-    );
+    // Render the app
+    const renderedApp = renderToString(<App store={store} routes={routes} history={history} />);
 
-    // ...simple rendering code
-    // includes writing redux state for client hydration
-    const renderedApp = renderToString(serverApp);
+    // Write the response output
+    //  - includes redux state for client hydration
     const html = renderToStaticMarkup(`<html><head><script type="text/javascript" dangerouslySetInnerHTML={{ __html: `window.__REDUX_STATE__=${serialize(store.getState())}` }}></script></head><body>${renderedApp}</body></html>`);
     response.status(200).send(`<!DOCTYPE html>${html}`);
   });
 });
 ```
 
-This _completes the quick start_, most of the code is standard for a react-redux project. Only a small amount of additional code is required to utilize **route actions**.
+This _completes the example_, most of the code is standard for a react-redux project. Only a small amount of additional code is required to utilize **react-router-dispatcher**.
 
 This library was designed to allow you to load data for routes using a standard redux approach, maintaining consistancy throughout your project.
 
@@ -272,16 +344,18 @@ It's important to understand that a `RouteContainer` should **only** be used lik
 Server-side rendering using _redux-saga_:
 
 ```js
-// #1. Run the root saga
+// #1. create the redux store
+
+// #2. Run the root saga
 const sagaPromise = sagaMiddleware.run(rootSaga);
 
-// #2. Invoke all route dispatchers to run sagas
+// #3. Invoke all route dispatchers to run sagas
 dispatchOnServer(store, routes, location, {}).then(() => {
 
-  // #3. Inform saga that all actions have been dispatched
+  // #4. Inform saga that all actions have been dispatched
   store.dispatch(END);
 
-  // #4. Render after the saga promise is done
+  // #5. Render after the saga promise is done
   sagaPromise.done.then(() => {
 
     // ... render the application here
@@ -425,13 +499,7 @@ const reloadOnPropsChange = (props, nextProps) => {
   return props.location.pathname !== nextProps.location.pathname;
 };
 
-export const Root = ({ store, history }) => (
-<Provider store={store}>
-  <StaticRouter location={location}>
-    <RouteDispatcher routes={routes} reloadOnPropsChange={reloadOnPropsChange} />
-  </StaticRouter>
-</Provider>
-);
+<RouteDispatcher routes={routes} reloadOnPropsChange={reloadOnPropsChange} />
 ```
 
 ### Contribute
