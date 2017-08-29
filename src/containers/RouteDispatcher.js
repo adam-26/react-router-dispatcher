@@ -12,6 +12,7 @@ const mapStateToProps = (state, ownProps: { routerReducerName?: string }) => {
 
 // for testing
 export function createRouteDispatcher(beginGlobalLoadFn, endGlobalLoadFn) {
+  // todo: withRouter() instead of 'mapStateToProps'?
   return connect(
     mapStateToProps, {
       beginGlobalLoad: beginGlobalLoadFn,
