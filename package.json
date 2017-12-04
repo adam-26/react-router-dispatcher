@@ -1,7 +1,7 @@
 {
   "name": "react-router-dispatcher",
-  "version": "1.0.0-beta.18",
-  "description": "Async server-side data loader using redux with react-router v4.x.",
+  "version": "2.0.0-beta.0",
+  "description": "react-router v4 async action dispatcher",
   "main": "lib/index.js",
   "module": "src/index.js",
   "engines": {
@@ -13,7 +13,8 @@
     "lint": "eslint ./src",
     "ci-jest": "TEST_REPORT_PATH=./.build/test jest --ci --coverage --coverageDirectory ./.build/coverage --testResultsProcessor='./node_modules/jest-junit-reporter'",
     "ci-lint": "eslint ./src --format junit --output-file ./.build/lint/eslint.xml",
-    "test": "npm run lint && jest"
+    "pretest": "npm run lint",
+    "test": "jest"
   },
   "keywords": [
     "redux",
@@ -22,10 +23,7 @@
     "dispatcher"
   ],
   "author": "adam-26",
-  "contributors": [
-    "Vitaly Aminev <v@makeomatic.ru>",
-    "Rodion Salnik (http://brocoders.com)"
-  ],
+  "contributors": [],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/adam-26/react-router-dispatcher/issues"
@@ -34,49 +32,41 @@
   "devDependencies": {
     "babel-cli": "^6.18.0",
     "babel-core": "^6.21.0",
-    "babel-eslint": "^7.1.1",
-    "babel-jest": "^20.0.3",
+    "babel-eslint": "^8.0.3",
+    "babel-jest": "^21.2.0",
     "babel-plugin-transform-react-remove-prop-types": "^0.4.8",
     "babel-plugin-transform-runtime": "^6.15.0",
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-react": "^6.16.0",
     "babel-preset-react-optimize": "^1.0.1",
     "babel-preset-stage-0": "^6.16.0",
-    "bluebird": "^3.4.6",
-    "enzyme": "^2.6.0",
-    "eslint": "^3.12.2",
-    "eslint-config-airbnb": "^14.1.0",
-    "eslint-plugin-import": "^2.2.0",
-    "eslint-plugin-jsx-a11y": "^4.0.0",
-    "eslint-plugin-react": "^6.8.0",
-    "immutable": "^3.8.1",
-    "jest": "^20.0.4",
+    "babel-runtime": "^6.20.0",
+    "enzyme": "^3.2.0",
+    "enzyme-adapter-react-16": "^1.1.0",
+    "eslint": "^4.12.1",
+    "eslint-plugin-jest": "^21.4.0",
+    "eslint-plugin-react": "^7.5.1",
+    "history": "^4.7.2",
+    "jest": "^21.2.1",
     "jest-junit-reporter": "^1.1.0",
-    "react-addons-test-utils": "^15.4.1",
-    "react-dom": "^15.4.1",
-    "react-router-dom": "^4.2.2",
-    "react-test-renderer": "^15.5.4",
-    "redux": "^3.6.0",
-    "redux-immutable": "^4.0.0",
-    "redux-saga": "^0.15.6",
-    "redux-thunk": "^2.2.0",
-    "sinon": "^2.1.0",
+    "prop-types": "^15.6.0",
+    "react-dom": "^16.2.0",
+    "react-test-renderer": "^16.2.0",
     "standard-version": "^4.2.0"
   },
   "dependencies": {
-    "babel-runtime": "^6.20.0",
+    "hoist-non-react-statics": "^2.3.1",
     "invariant": "^2.2.2",
-    "redux-actions": "^2.0.1",
-    "prop-types": "~15.x.x",
-    "react": "^15.x.x",
-    "react-redux": "~4.x.x || ~5.x.x",
+    "react": "^16.2.0",
+    "react-display-name": "^0.2.3",
     "react-router": "^4.2.0",
-    "react-router-config": "^1.0.0-beta.4",
-    "react-router-redux": "^5.0.0-alpha.6"
+    "react-router-config": "^1.0.0-beta.4"
   },
   "jest": {
-    "automock": false,
     "mapCoverage": true,
+    "testMatch": [
+      "**/__tests__/**/*.test.js?(x)"
+    ],
     "testResultsProcessor": "./node_modules/jest-junit-reporter"
   }
 }
