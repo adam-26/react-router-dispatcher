@@ -58,7 +58,7 @@ describe('dispatchRouteActions', () => {
                 [Home, match1]
             ];
 
-            const actionSets = resolveActionSets(routeComponents, dispatchActions/*, helpers*/);
+            const actionSets = resolveActionSets(routeComponents, dispatchActions);
 
             expect(actionSets).toHaveLength(1);
             expect(actionSets[0]).toHaveLength(2);
@@ -79,7 +79,7 @@ describe('dispatchRouteActions', () => {
                 [Home, match1]
             ];
 
-            const actionSets = resolveActionSets(routeComponents, [['primary'], ['secondary']] /*, helpers*/);
+            const actionSets = resolveActionSets(routeComponents, [['primary'], ['secondary']]);
             expect(actionSets).toHaveLength(2);
 
             expect(actionSets[0]).toHaveLength(1);
@@ -175,6 +175,19 @@ describe('dispatchRouteActions', () => {
             p.then(() => {
                 expect(mockHomeAction.mock.calls).toHaveLength(0);
                 expect(mockRootAction.mock.calls).toHaveLength(0);
+                done();
+            });
+        });
+
+        test('returns promise when routes matched - dispatchAction function', done => {
+            const p = dispatchRouteActions(
+                { pathname: '/' },
+                { routes, routeComponentPropNames, helpers, dispatchActions: () => [['primary', 'secondary']]});
+
+            p.then(() => {
+                expect(mockHomeAction.mock.calls).toHaveLength(1);
+                expect(mockRootAction.mock.calls).toHaveLength(1);
+                expect(order).toEqual([0, 1]);
                 done();
             });
         });

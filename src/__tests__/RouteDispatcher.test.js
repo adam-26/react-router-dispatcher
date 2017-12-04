@@ -30,6 +30,9 @@ describe('RouteDispatcher', () => {
 
             dispatcher = new RouteDispatcher({ dispatchActions: [['loadData'], ['parseData']] });
             expect(dispatcher.props.dispatchActions).toEqual([['loadData'], ['parseData']]);
+
+            dispatcher = new RouteDispatcher({ dispatchActions: () => [['loadData']] });
+            expect(typeof dispatcher.props.dispatchActions).toBe('function');
         });
 
         test('assigns state', () => {
@@ -41,7 +44,7 @@ describe('RouteDispatcher', () => {
         });
 
         test('dispatches actions if not previously done', done => {
-            const wrapper = shallow(<RouteDispatcher hasDispatchedActions={false} />);
+            const wrapper = shallow(<RouteDispatcher hasDispatchedActions={false} dispatchActions={() => [['loadData']]} />);
 
             setImmediate(() => {
                 expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(1);
