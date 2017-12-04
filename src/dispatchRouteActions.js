@@ -4,6 +4,33 @@ import invariant from 'invariant';
 import { matchRoutes } from 'react-router-config';
 import getDisplayName from 'react-display-name';
 
+export function parseDispatchActions(dispatchActions) {
+    if (typeof dispatchActions === 'string') {
+        return [[dispatchActions]];
+    }
+
+    if (Array.isArray(dispatchActions)) {
+        if ((!Array.isArray(dispatchActions[0]))) {
+            // if its a flat array, wrap actions to be an action set
+            return [dispatchActions];
+        }
+
+        return dispatchActions.map(actionSet => {
+            if (Array.isArray(actionSet)) {
+                return actionSet;
+            }
+
+            if (typeof actionSet === 'string') {
+                return [actionSet];
+            }
+
+            invariant(false, `Invalid dispatch action, '${actionSet}', expected string or array.`);
+        });
+    }
+
+    invariant(false, 'Invalid dispatch actions, expected string or array.');
+}
+
 export function resolveRouteComponents(branch, routeComponentPropNames) {
     const routeComponents = [];
     branch.forEach(({ route, match }) => {
@@ -19,8 +46,8 @@ export function resolveRouteComponents(branch, routeComponentPropNames) {
 }
 
 export function resolveActionSets(routeComponents, dispatchActions) {
-    // batch each actionSet using Promise.all()
-    return dispatchActions.map((actionSet) => {
+    const actionSets = parseDispatchActions(dispatchActions);
+    return actionSets.map((actionSet) => {
         const promises = [];
         routeComponents.forEach(([component, match]) => {
             actionSet.forEach((action) => {
@@ -64,6 +91,9 @@ export default function dispatchRouteActions(location, props) {
 
     // Determine all RouteComponent(s) matched for the current route
     const routeComponents = resolveRouteComponents(branch, routeComponentPropNames);
-    const actionSets = resolveActionSets(routeComponents, dispatchActions);
+    const actionSets = resolveActionSets(
+        routeComponents,
+        typeof dispatchActions === 'function' ? dispatchActions(location, helpers) : dispatchActions);
+
     return reduceActionSets(actionSets, helpers);
 }

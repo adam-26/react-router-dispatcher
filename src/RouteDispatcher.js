@@ -2,8 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { renderRoutes } from 'react-router-config';
 import { createPath } from 'history';
-import invariant from 'invariant';
-import dispatchRouteActions from './dispatchRouteActions';
+import dispatchRouteActions, { parseDispatchActions } from './dispatchRouteActions';
 
 function getDispatcherProps(props) {
   const { routes, dispatchActions, routeComponentPropNames, helpers } = props;
@@ -11,30 +10,11 @@ function getDispatcherProps(props) {
 }
 
 function standardizeDispatchActions(dispatchActions) {
-    if (typeof dispatchActions === 'string') {
-        return [[dispatchActions]];
+    if (typeof dispatchActions === 'function') {
+        return dispatchActions;
     }
 
-    if (Array.isArray(dispatchActions)) {
-        if ((!Array.isArray(dispatchActions[0]))) {
-            // if its a flat array, wrap actions to be an action set
-            return [dispatchActions];
-        }
-
-        return dispatchActions.map(actionSet => {
-            if (Array.isArray(actionSet)) {
-                return actionSet;
-            }
-
-            if (typeof actionSet === 'string') {
-                return [actionSet];
-            }
-
-            invariant(false, `Invalid dispatch action, '${actionSet}', expected string or array.`);
-        });
-    }
-
-    invariant(false, 'Invalid dispatch actions, expected string or array.');
+    return parseDispatchActions(dispatchActions);
 }
 
 const RouteDispatcherPropTypes = {
@@ -57,7 +37,8 @@ const RouteDispatcherPropTypes = {
     dispatchActions: PropTypes.oneOfType([
         PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
         PropTypes.arrayOf(PropTypes.string),
-        PropTypes.string
+        PropTypes.string,
+        PropTypes.func
     ]),
 
     /**
