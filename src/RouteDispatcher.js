@@ -1,12 +1,14 @@
+/* eslint-disable react/prop-types */
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { Route } from 'react-router';
 import { renderRoutes } from 'react-router-config';
 import { createPath } from 'history';
 import dispatchRouteActions, { parseDispatchActions } from './dispatchRouteActions';
 
 function getDispatcherProps(props) {
-  const { routes, dispatchActions, routeComponentPropNames, helpers } = props;
-  return { routes, dispatchActions, routeComponentPropNames, helpers };
+  const { routes, routeComponentPropNames, dispatchActionParams } = props;
+  return { routes, routeComponentPropNames, dispatchActionParams };
 }
 
 function standardizeDispatchActions(dispatchActions) {
@@ -15,6 +17,60 @@ function standardizeDispatchActions(dispatchActions) {
     }
 
     return parseDispatchActions(dispatchActions);
+}
+
+function filterProps(props, propTypes) {
+    const filteredProps = {};
+    Object.keys(props).forEach(key => {
+        if(!(key in propTypes)) {
+            filteredProps[key] = props[key];
+        }
+    });
+
+    return filteredProps;
+}
+
+function isDispatchActionsEqual(arr1, arr2) {
+    // Determine if a function was passed.
+    const isFunc1 = typeof arr1 === 'function';
+    const isFunc2 = typeof arr2 === 'function';
+    if (isFunc1 || isFunc2) {
+        if (isFunc1 !== isFunc2) {
+            return false;
+        }
+
+        return arr1 === arr2;
+    }
+
+    // It should be an array
+    if (arr1.length !== arr2.length) {
+        return false;
+    }
+
+    for (let idx = 0, len = arr1.length; idx < len; idx++) {
+        const item1 = arr1[idx];
+        const item2 = arr2[idx];
+
+        const isArray1 = Array.isArray(item1);
+        if (isArray1 !== Array.isArray(item2)) {
+            return false;
+        }
+
+        if (isArray1) {
+            if (!isDispatchActionsEqual(item1, item2)) {
+                return false;
+            }
+        }
+        else {
+            for (let j = 0, len = item1.length; j < len; j++) {
+                if (item1[j] !== item2[j]) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 const RouteDispatcherPropTypes = {
@@ -61,12 +117,15 @@ const RouteDispatcherPropTypes = {
     /**
      * Helpers are passed to all action dispatchers
      */
-    helpers: PropTypes.any,
+    dispatchActionParams: PropTypes.any,
 };
 
 class RouteDispatcher extends Component {
     static propTypes = {
       ...RouteDispatcherPropTypes,
+
+      // routes are required
+      routes: RouteDispatcherPropTypes.routes.isRequired,
 
       /**
        * React router props
@@ -77,37 +136,38 @@ class RouteDispatcher extends Component {
     };
 
     static defaultProps = {
-      helpers: {},
+      dispatchActionParams: {},
       dispatchActions: [['loadData']],
       routeComponentPropNames: ['component', 'components'],
       hasDispatchedActions: false,
       loadingComponent: <div>Loading...</div>,
-      render(routes) {
-        return renderRoutes(routes);
+      render(routes, routeProps) {
+        return renderRoutes(routes, routeProps);
       },
     };
 
-    static dispatchActions = (location, props) => {
-      return dispatchRouteActions(location, getDispatcherProps(props));
-    };
+    static dispatchActions(location, dispatchActions, props) {
+      return dispatchRouteActions(location, { dispatchActions, ...getDispatcherProps(props) });
+    }
 
     constructor(props, context) {
-      const { dispatchActions, ...remainingProps } = props;
-      super({ ...remainingProps, dispatchActions: standardizeDispatchActions(dispatchActions)}, context);
+      super(props, context);
       this.state = {
         previousLocation: null,
         hasDispatchedActions: props.hasDispatchedActions,
+        dispatchActions: standardizeDispatchActions(props.dispatchActions)
       };
     }
 
     componentWillMount() {
-      if (this.state.hasDispatchedActions) {
+      const { hasDispatchedActions, dispatchActions } = this.state;
+      if (hasDispatchedActions) {
         // data is already loaded
         return;
       }
 
       const { location, ...props } = this.props;
-      RouteDispatcher.dispatchActions(location, props).then(() => {
+      RouteDispatcher.dispatchActions(location, dispatchActions, props).then(() => {
         // re-render after data has loaded
         this.setState({ hasDispatchedActions: true });
       });
@@ -115,13 +175,22 @@ class RouteDispatcher extends Component {
 
     componentWillReceiveProps(nextProps) {
       const { location } = this.props;
-      const hasLocationChanged = createPath(nextProps.location) !== createPath(location);
+      const receivedDispatchActions = typeof nextProps.dispatchActions !== 'undefined';
+      const newState = receivedDispatchActions ?
+          { dispatchActions: standardizeDispatchActions(nextProps.dispatchActions) } :
+          {};
 
-      if (hasLocationChanged) {
-        this.setState({ previousLocation: location });
+      const hasLocationChanged =
+          typeof nextProps.location !== 'undefined' &&
+          createPath(nextProps.location) !== createPath(location);
+
+      if (hasLocationChanged ||
+          (receivedDispatchActions &&
+          !isDispatchActionsEqual(newState.dispatchActions, this.state.dispatchActions))) {
+        this.setState({ ...newState, previousLocation: location });
 
         // load data while the old screen remains
-        RouteDispatcher.dispatchActions(location, nextProps).then(() => {
+        RouteDispatcher.dispatchActions(location, this.state.dispatchActions, nextProps).then(() => {
           // clear previousLocation so the next screen renders
           this.setState({ previousLocation: null });
         });
@@ -129,17 +198,22 @@ class RouteDispatcher extends Component {
     }
 
     render() {
-      const { routes, render, loadingComponent } = this.props;
-      if (!this.state.hasDispatchedActions) {
-        // Display a loading indicator until data is loaded
-        return loadingComponent;
-      }
+        const { location, routes, render, loadingComponent } = this.props;
+        const { hasDispatchedActions, previousLocation } = this.state;
+        if (!hasDispatchedActions) {
+            // Display a loading indicator until data is loaded
+            return loadingComponent;
+        }
 
-      if (Array.isArray(routes)) {
-        return render(routes);
-      }
-
-      return null;
+        return (
+            <Route
+                location={previousLocation || location}
+                render={() => render(
+                    Array.isArray(routes) ? routes : null,
+                    filterProps(this.props, RouteDispatcher.propTypes)
+                )}
+            />
+        );
     }
 }
 
