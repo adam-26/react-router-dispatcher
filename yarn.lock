@@ -55,15 +55,9 @@
     lodash "^4.2.0"
     to-fast-properties "^2.0.0"
 
-"@types/events@*":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@types/events/-/events-1.1.0.tgz#93b1be91f63c184450385272c47b6496fd028e02"
-
 "@types/node@*":
-  version "8.0.54"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-8.0.54.tgz#3fd9357db4af388b79e03845340259440edffde6"
-  dependencies:
-    "@types/events" "*"
+  version "8.0.56"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-8.0.56.tgz#c4652f88d7a677e26ccc16c1485c282ce28f1ce9"
 
 JSONStream@^1.0.4:
   version "1.3.1"
@@ -1765,8 +1759,8 @@ escodegen@^1.6.1:
     source-map "~0.5.6"
 
 eslint-plugin-jest@^21.4.0:
-  version "21.4.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-jest/-/eslint-plugin-jest-21.4.0.tgz#8d8a1166c92a7530217d201a5d440a1f4a042f61"
+  version "21.4.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-jest/-/eslint-plugin-jest-21.4.2.tgz#0e8ec03687259169cef46656827a0a0715e8a8d4"
 
 eslint-plugin-react@^7.5.1:
   version "7.5.1"

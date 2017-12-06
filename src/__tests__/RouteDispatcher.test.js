@@ -4,16 +4,17 @@ import { RouteDispatcher } from '../RouteDispatcher';
 import { MemoryRouter } from 'react-router'
 
 describe('RouteDispatcher', () => {
+    const location = { pathname: '/' };
     const defaultRoutes = [];
     let dispatchActions;
 
     beforeEach(() => {
-       dispatchActions = RouteDispatcher.dispatchActions;
-       RouteDispatcher.dispatchActions = jest.fn(() => Promise.resolve());
+       dispatchActions = RouteDispatcher.dispatch;
+       RouteDispatcher.dispatch = jest.fn(() => Promise.resolve());
     });
 
     afterEach(() => {
-        RouteDispatcher.dispatchActions = dispatchActions;
+        RouteDispatcher.dispatch = dispatchActions;
     });
 
     describe('constructor', () => {
@@ -46,10 +47,10 @@ describe('RouteDispatcher', () => {
         });
 
         test('dispatches actions if not previously done', done => {
-            const wrapper = shallow(<RouteDispatcher routes={defaultRoutes} hasDispatchedActions={false} dispatchActions={() => [['loadData']]} />);
+            const wrapper = shallow(<RouteDispatcher location={location} routes={defaultRoutes} hasDispatchedActions={false} dispatchActions={() => [['loadData']]} />);
 
             setImmediate(() => {
-                expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(1);
+                expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(1);
                 expect(wrapper.state('hasDispatchedActions')).toBe(true);
                 done();
             });
@@ -59,14 +60,14 @@ describe('RouteDispatcher', () => {
     describe('componentWillMount', () => {
         test('does not dispatch actions if previously dispatched', () => {
             shallow(<RouteDispatcher routes={defaultRoutes} hasDispatchedActions={true} />);
-            expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(0);
+            expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(0);
         });
 
         test('dispatches actions if not previously done', done => {
-            const wrapper = shallow(<RouteDispatcher routes={defaultRoutes} hasDispatchedActions={false} />);
+            const wrapper = shallow(<RouteDispatcher location={location} routes={defaultRoutes} hasDispatchedActions={false} />);
 
             setImmediate(() => {
-                expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(1);
+                expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(1);
                 expect(wrapper.state('hasDispatchedActions')).toBe(true);
                 done();
             });
@@ -79,7 +80,7 @@ describe('RouteDispatcher', () => {
             const wrapper = shallow(<RouteDispatcher  routes={defaultRoutes}hasDispatchedActions={true} location={currentLocation} />);
             wrapper.instance().componentWillReceiveProps({ location: currentLocation });
 
-            expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(0);
+            expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(0);
             expect(wrapper.state('previousLocation')).toBe(null);
         });
 
@@ -87,7 +88,7 @@ describe('RouteDispatcher', () => {
             const wrapper = shallow(<RouteDispatcher routes={defaultRoutes} hasDispatchedActions={true} dispatchActions={[['loadData']]} />);
             wrapper.instance().componentWillReceiveProps({ dispatchActions: [['loadData']] });
 
-            expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(0);
+            expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(0);
             expect(wrapper.state('previousLocation')).toBe(null);
         });
 
@@ -96,43 +97,41 @@ describe('RouteDispatcher', () => {
             const wrapper = shallow(<RouteDispatcher routes={defaultRoutes} hasDispatchedActions={true} dispatchActions={dispActionFunc} />);
             wrapper.instance().componentWillReceiveProps({ dispatchActions: dispActionFunc });
 
-            expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(0);
+            expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(0);
             expect(wrapper.state('previousLocation')).toBe(null);
         });
 
         test('dispatches actions when location has changed', done => {
-            const currentLocation = { pathname: '/home' };
             const newLocation = { pathname: '/root' };
             const wrapper = shallow(
                 <RouteDispatcher
+                    location={location}
                     routes={defaultRoutes}
-                    hasDispatchedActions={true}
-                    location={currentLocation} />);
+                    hasDispatchedActions={true} />);
 
             wrapper.instance().componentWillReceiveProps({ location: newLocation });
 
-            expect(wrapper.state('previousLocation')).toEqual(currentLocation);
+            expect(wrapper.state('previousLocation')).toEqual(location);
             setImmediate(() => {
-                expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(1);
+                expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(1);
                 expect(wrapper.state('previousLocation')).toEqual(null);
                 done();
             });
         });
 
         test('dispatches actions when dispatchActions has changed', done => {
-            const currentLocation = { pathname: '/' };
             const wrapper = shallow(
                 <RouteDispatcher
+                    location={location}
                     routes={defaultRoutes}
                     hasDispatchedActions={true}
-                    location={currentLocation}
                     dispatchActions={[['loadData']]} />);
 
             wrapper.instance().componentWillReceiveProps({ dispatchActions: [['loadData', 'getMetadata']] });
 
-            expect(wrapper.state('previousLocation')).toEqual(currentLocation);
+            expect(wrapper.state('previousLocation')).toEqual(location);
             setImmediate(() => {
-                expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(1);
+                expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(1);
                 expect(wrapper.state('previousLocation')).toEqual(null);
                 done();
             });
@@ -141,20 +140,19 @@ describe('RouteDispatcher', () => {
         test('dispatches actions when dispatchActions function has changed', done => {
             const dispActionFunc1 = () => {};
             const dispActionFunc2 = () => {};
-            const currentLocation = { pathname: '/' };
 
             const wrapper = shallow(
                 <RouteDispatcher
+                    location={location}
                     routes={defaultRoutes}
                     hasDispatchedActions={true}
-                    location={currentLocation}
                     dispatchActions={dispActionFunc1} />);
 
             wrapper.instance().componentWillReceiveProps({ dispatchActions: dispActionFunc2 });
 
-            expect(wrapper.state('previousLocation')).toEqual(currentLocation);
+            expect(wrapper.state('previousLocation')).toEqual(location);
             setImmediate(() => {
-                expect(RouteDispatcher.dispatchActions.mock.calls).toHaveLength(1);
+                expect(RouteDispatcher.dispatch.mock.calls).toHaveLength(1);
                 expect(wrapper.state('previousLocation')).toEqual(null);
                 done();
             });
@@ -163,7 +161,7 @@ describe('RouteDispatcher', () => {
 
     describe('render', () => {
         test('displays loading component before actions have been dispatched', () => {
-            const wrapper = shallow(<RouteDispatcher routes={defaultRoutes} hasDispatchedActions={false} />);
+            const wrapper = shallow(<RouteDispatcher location={location} routes={defaultRoutes} hasDispatchedActions={false} />);
             expect(wrapper.html()).toBe('<div>Loading...</div>');
         });
 

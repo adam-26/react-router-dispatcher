@@ -120,6 +120,8 @@ const RouteDispatcherPropTypes = {
     dispatchActionParams: PropTypes.any,
 };
 
+const DEFAULT_DISPATCH_ACTIONS = [['loadData']];
+
 class RouteDispatcher extends Component {
     static propTypes = {
       ...RouteDispatcherPropTypes,
@@ -137,7 +139,7 @@ class RouteDispatcher extends Component {
 
     static defaultProps = {
       dispatchActionParams: {},
-      dispatchActions: [['loadData']],
+      dispatchActions: DEFAULT_DISPATCH_ACTIONS,
       routeComponentPropNames: ['component', 'components'],
       hasDispatchedActions: false,
       loadingComponent: <div>Loading...</div>,
@@ -146,7 +148,7 @@ class RouteDispatcher extends Component {
       },
     };
 
-    static dispatchActions(location, dispatchActions, props) {
+    static dispatch(location, dispatchActions, props) {
       return dispatchRouteActions(location, { dispatchActions, ...getDispatcherProps(props) });
     }
 
@@ -167,7 +169,7 @@ class RouteDispatcher extends Component {
       }
 
       const { location, ...props } = this.props;
-      RouteDispatcher.dispatchActions(location, dispatchActions, props).then(() => {
+      RouteDispatcher.dispatch(location, dispatchActions, props).then(() => {
         // re-render after data has loaded
         this.setState({ hasDispatchedActions: true });
       });
@@ -190,7 +192,7 @@ class RouteDispatcher extends Component {
         this.setState({ ...newState, previousLocation: location });
 
         // load data while the old screen remains
-        RouteDispatcher.dispatchActions(location, this.state.dispatchActions, nextProps).then(() => {
+        RouteDispatcher.dispatch(location, this.state.dispatchActions, nextProps).then(() => {
           // clear previousLocation so the next screen renders
           this.setState({ previousLocation: null });
         });
@@ -219,5 +221,7 @@ class RouteDispatcher extends Component {
 
 export {
     RouteDispatcherPropTypes,
-    RouteDispatcher
+    RouteDispatcher,
+    standardizeDispatchActions,
+    DEFAULT_DISPATCH_ACTIONS
 };
