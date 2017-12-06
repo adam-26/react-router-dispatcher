@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { withRouter } from 'react-router';
 import hoistNonReactStatic from 'hoist-non-react-statics';
 import { RouteDispatcher, RouteDispatcherPropTypes } from './RouteDispatcher';
+import defineRoutes from './defineRoutes';
 
 const RouterDispatcher = withRouter(RouteDispatcher);
 
@@ -35,6 +36,7 @@ function createRouteDispatcher(location, routeConfig, options) {
 }
 
 export {
+    defineRoutes,
     createRouteDispatcher,
     RouterDispatcher as RouteDispatcher,
 };

@@ -31,21 +31,17 @@ yarn add react-router-dispatcher
 ##### server-side rendering
 
 If your building a universal application, use the `createRouteDispatcher` factory method to
-create the `<RouteDispatcher>` component that is used to render on **both** the server and client.
+create the `<RouteDispatcher>` component that is used to render on the server **only**.
 
 ```js
 import { createRouteDispatcher } from 'react-router-dispatcher';
 
 // === Params ===
-// The current request url, for expressjs use request.url
-const location = request.url;
-// route configuration, using react-router-config configuration
-const routes = [...];
+const location = request.url; // current request URL
+const routes = [...]; // react-router-config configuration
 const options = {
-  // static method(s) to invoke - defaults to 'loadData'
-  dispatchActions: [['loadData']],
-  // passed to all static action methods
-  helpers: { apiClient }
+  dispatchActions: [['loadData']], // static methods to invoke
+  dispatchActionParams: { apiClient } // passed to all dispatch action methods
 };
 
 // Use the createRouteDispatcher factory, it returns a component and method for server-side rendering
@@ -53,21 +49,35 @@ const { RouteDispatcher, dispatchOnServer } = createRouteDispatcher(location, ro
 
 dispatchOnServer().then(() => {
   // render your application here
-  // Use the <RouteDispatcher /> component created by the factory method to render your app,
-  // this <RouteDispatcher /> will NOT invoke static action methods on initial load on the client
+  // Use the <RouteDispatcher /> component created by the factory method to render your app
 });
 
 ```
 
-##### client-only rendering
+**NOTE:** You don't **need** to use the `RouteDispatcher` returned by the factory method, but its easiest for getting started.
+          In this case be sure that you set the prop hasDispatchedActions to true.
 
-If your application does not use server-side rendering, use the exported `<RouteDispatcher>` component
-to render your application.
+```js
+import { RouteDispatcher } from 'react-router-dispatcher';
+
+// On the server, you can use the exported RouteDispatcher, be sure to set 'hasDispatchedActions' to true.
+<RouteDispatcher hasDispatchedActions={true} routes={/*routes here*/} />
+```
+
+##### client rendering
+
+For the client app, use the exported `<RouteDispatcher>` component to render your application.
 
 ```js
 import { RouterDispatcher } from 'react-router-dispatcher';
 
+const routeCfg = []; // same as server (react-router-config routes)
+const hasDispatchedActions = true; // true if rendered on server, otherwise false
+
 // render your app
+<Router ...>
+	<RouterDispatcher hasDispatchedActions={hasDispatchedActions} routes={routeCfg} />
+</Router>
 
 ```
 
@@ -109,13 +119,14 @@ Accepts:
   * a string, the default is `loadData` - any component with a `static loadData = (match, helpers) => {}` will be invoked before rendering
   * an array, `['loadData', 'parseData']` - all methods will be invoked in parallel before rendering
   * nested array, `[['loadData'], ['parseData']]` - each inner array will be invoked serially (ie: `loadData` will be invoked on all components, before `parseData` is invoked on all components)
+  * a function, `dispatchActions(location, dispatchActionParams)`. Return one of the previously defined types (string, array, nested array).
 
 `routeComponentPropNames`:
 Configure the **prop** names of _route components_ that are known to be react **components**
 The default value is `component`.
 
-`helpers`:
-Any value can be assigned to helpers, the value is passed to all `static action methods`, common usages include passing api clients and application state (such as a redux store)
+`dispatchActionParams`:
+Any value can be assigned to the params, the value is passed to all **static action methods**, common usages include passing api clients and application state (such as a redux store)
 
 ### RouteDispatcher Props
 >All configuration options can be assigned as props
@@ -125,6 +136,19 @@ If server-side rendering is **not** used, a _loading component_ will be displaye
 
 `render`:
 Allows the render method to be customized, you **must** invoke the react-router `renderRoutes` method within the render method.
+
+### Enhancing Routes
+
+The `defineRoutes` utility method automatically assigns `keys` to routes that don't have a key manually assigned.
+This key can be accessed from **dispatch actions** to determine the route that is responsible for invoking the action.
+
+```js
+import { defineRoutes } from 'react-router-dispatcher';
+
+const routes = defineRoutes([
+	// define react-router-config routes here
+]);
+```
 
 ### Contribute
 For questions or issues, please [open an issue](https://github.com/adam-26/react-router-dispatcher/issues), and you're welcome to submit a PR for bug fixes and feature requests.
