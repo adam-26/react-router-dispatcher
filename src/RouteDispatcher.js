@@ -19,17 +19,6 @@ function standardizeDispatchActions(dispatchActions) {
     return parseDispatchActions(dispatchActions);
 }
 
-function filterProps(props, propTypes) {
-    const filteredProps = {};
-    Object.keys(props).forEach(key => {
-        if(!(key in propTypes)) {
-            filteredProps[key] = props[key];
-        }
-    });
-
-    return filteredProps;
-}
-
 function isDispatchActionsEqual(arr1, arr2) {
     // Determine if a function was passed.
     const isFunc1 = typeof arr1 === 'function';
@@ -73,74 +62,68 @@ function isDispatchActionsEqual(arr1, arr2) {
     return true;
 }
 
-const RouteDispatcherPropTypes = {
-    /**
-     * The function used to render routes.
-     */
-    render: PropTypes.func,
-
-    /**
-     * The configured react-router routes (using react-router-config format).
-     */
-    routes: PropTypes.array,
-
-    /**
-     * The name(s) of of static action dispatcher functions to invoke on route components.
-     *
-     * This can be a string, and array, or an array or arrays. When an array of arrays,
-     * each array of actions is dispatched serially.
-     */
-    dispatchActions: PropTypes.oneOfType([
-        PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
-        PropTypes.arrayOf(PropTypes.string),
-        PropTypes.string,
-        PropTypes.func
-    ]),
-
-    /**
-     * The name(s) of props on route components that can contain action dispatchers
-     */
-    routeComponentPropNames: PropTypes.arrayOf(PropTypes.string),
-
-    /**
-     * The component to render when data is initially loading
-     */
-    loadingComponent: PropTypes.element,
-
-    /**
-     * True if actions have been dispatched, otherwise false.
-     *
-     * If rendering on the server, this should be set to true on the initial client render.
-     */
-    hasDispatchedActions: PropTypes.bool,
-
-    /**
-     * Helpers are passed to all action dispatchers
-     */
-    dispatchActionParams: PropTypes.any,
-};
-
 const DEFAULT_DISPATCH_ACTIONS = [['loadData']];
+const DEFAULT_COMPONENT_PROP_NAMES = ['component', 'components'];
 
 class RouteDispatcher extends Component {
     static propTypes = {
-      ...RouteDispatcherPropTypes,
+        /**
+         * The function used to render routes.
+         */
+        render: PropTypes.func,
 
-      // routes are required
-      routes: RouteDispatcherPropTypes.routes.isRequired,
+        /**
+         * The configured react-router routes (using react-router-config format).
+         */
+        routes: PropTypes.array.isRequired,
 
-      /**
-       * React router props
-       */
-      match: PropTypes.object,
-      location: PropTypes.object,
-      history: PropTypes.object
+        /**
+         * The name(s) of of static action dispatcher functions to invoke on route components.
+         *
+         * This can be a string, and array, or an array or arrays. When an array of arrays,
+         * each array of actions is dispatched serially.
+         */
+        dispatchActions: PropTypes.oneOfType([
+            PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
+            PropTypes.arrayOf(PropTypes.string),
+            PropTypes.string,
+            PropTypes.func
+        ]),
+
+        /**
+         * The name(s) of props on route components that can contain action dispatchers
+         */
+        routeComponentPropNames: PropTypes.arrayOf(PropTypes.string),
+
+        /**
+         * The component to render when data is initially loading
+         */
+        loadingComponent: PropTypes.element,
+
+        /**
+         * True if actions have been dispatched, otherwise false.
+         *
+         * If rendering on the server, this should be set to true on the initial client render.
+         */
+        hasDispatchedActions: PropTypes.bool,
+
+        /**
+         * Helpers are passed to all action dispatchers
+         */
+        dispatchActionParams: PropTypes.any,
+
+        /**
+        * React router props
+        */
+        match: PropTypes.object,
+        location: PropTypes.object,
+        history: PropTypes.object
     };
 
     static defaultProps = {
       dispatchActionParams: {},
       dispatchActions: DEFAULT_DISPATCH_ACTIONS,
-      routeComponentPropNames: ['component', 'components'],
+      routeComponentPropNames: DEFAULT_COMPONENT_PROP_NAMES,
       hasDispatchedActions: false,
       loadingComponent: <div>Loading...</div>,
       render(routes, routeProps) {
@@ -200,19 +183,34 @@ class RouteDispatcher extends Component {
     }
 
     render() {
-        const { location, routes, render, loadingComponent } = this.props;
-        const { hasDispatchedActions, previousLocation } = this.state;
-        if (!hasDispatchedActions) {
+        const {
+            location,
+            routes,
+            render,
+            loadingComponent,
+            // DO NOT DELETE THESE PROPS - this is the easiest way to access route props
+            /* eslint-disable no-unused-vars */
+            dispatchActions,
+            routeComponentPropNames,
+            hasDispatchedActions,
+            dispatchActionParams,
+            match,
+            history,
+            /* eslint-enable no-unused-vars */
+            ...routeProps
+        } = this.props;
+
+        if (!this.state.hasDispatchedActions) {
             // Display a loading indicator until data is loaded
             return loadingComponent;
         }
 
         return (
             <Route
-                location={previousLocation || location}
+                location={this.state.previousLocation || location}
                 render={() => render(
                     Array.isArray(routes) ? routes : null,
-                    filterProps(this.props, RouteDispatcher.propTypes)
+                    routeProps
                 )}
             />
         );
@@ -220,8 +218,8 @@ class RouteDispatcher extends Component {
 }
 
 export {
-    RouteDispatcherPropTypes,
     RouteDispatcher,
     standardizeDispatchActions,
-    DEFAULT_DISPATCH_ACTIONS
+    DEFAULT_DISPATCH_ACTIONS,
+    DEFAULT_COMPONENT_PROP_NAMES
 };
