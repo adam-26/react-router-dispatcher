@@ -53,7 +53,7 @@ function createRouteDispatchers(routeConfig, options = {}) {
         UniversalRouteDispatcher: RouteDispatcherHoc(
             'UniversalRouteDispatcher',
             routeConfig,
-            { ...options, hasDispatchedActions: true })
+            { ...options, dispatchActionsOnFirstRender: false })
     };
 }
 
