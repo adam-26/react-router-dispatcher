@@ -35,7 +35,7 @@ yarn add react-router-dispatcher
 ##### server-side rendering
 
 If your building a universal application, use the `createRouteDispatcher` factory method to
-create the `<RouteDispatcher>` component that is used to render on the server **only**.
+create the `<RouteDispatcher>` component to render routes on **both client and server**.
 
 ```js
 import { createRouteDispatcher } from 'react-router-dispatcher';
@@ -44,28 +44,19 @@ import { createRouteDispatcher } from 'react-router-dispatcher';
 const location = request.url; // current request URL
 const routes = [...]; // react-router-config configuration
 const options = {
-  dispatchActions: [['loadData']], // static methods to invoke
-  dispatchActionParams: { apiClient } // passed to all dispatch action methods
+  dispatchActions: [['loadData']] // static methods to invoke
 };
 
 // Use the createRouteDispatcher factory, it returns a component and method for server-side rendering
 const { RouteDispatcher, dispatchOnServer } = createRouteDispatcher(location, routes, options);
 
-dispatchOnServer().then(() => {
+const dispatchActionParams = { apiClient }; // passed to all dispatch action methods
+
+dispatchOnServer(dispatchActionParams).then(() => {
   // render your application here
   // Use the <RouteDispatcher /> component created by the factory method to render your app
 });
 
-```
-
-**NOTE:** You don't **need** to use the `RouteDispatcher` returned by the factory method, but its easiest for getting started.
-          In this case be sure that you set the prop hasDispatchedActions to true.
-
-```js
-import { RouteDispatcher } from 'react-router-dispatcher';
-
-// On the server, you can use the exported RouteDispatcher, be sure to set 'hasDispatchedActions' to true.
-<RouteDispatcher hasDispatchedActions={true} routes={/*routes here*/} />
 ```
 
 ##### client rendering
@@ -80,7 +71,7 @@ const hasDispatchedActions = true; // true if rendered on server, otherwise fals
 
 // render your app
 <Router ...>
-	<RouterDispatcher hasDispatchedActions={hasDispatchedActions} routes={routeCfg} />
+	<RouterDispatcher hasDispatchedActions={hasDispatchedActions} routes={routeCfg} dispatchActions={[['loadData']]} />
 </Router>
 
 ```
