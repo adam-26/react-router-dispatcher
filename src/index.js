@@ -41,12 +41,12 @@ function createRouteDispatcher(pathAnyQuery, routeConfig, options = {}) {
         { routes: routeConfig });
 
     return {
-        dispatchOnServer: () =>
+        dispatchOnServer: (dispatchActionParams) =>
             RouterDispatcher.dispatch(
                 parsePath(pathAnyQuery),
                 standardizeDispatchActions(options.dispatchActions || DEFAULT_DISPATCH_ACTIONS),
-                dispatchOpts),
-        RouteDispatcher: RouteDispatcherHoc(routeConfig, { ...options, hasDispatchedActions: true }),
+                { ...dispatchOpts, dispatchActionParams }),
+        RouteDispatcher: RouteDispatcherHoc(routeConfig, { ...options, hasDispatchedActions: true })
     };
 }
 
