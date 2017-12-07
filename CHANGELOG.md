@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.0.0-beta.7"></a>
+# [2.0.0-beta.7](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.6...v2.0.0-beta.7) (2017-12-07)
+
+
+### Features
+
+* **factory:** pass action params ([#26](https://github.com/adam-26/react-router-dispatcher/issues/26)) ([144203d](https://github.com/adam-26/react-router-dispatcher/commit/144203d))
+
+
+
 <a name="2.0.0-beta.6"></a>
 # [2.0.0-beta.6](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.5...v2.0.0-beta.6) (2017-12-07)
 
