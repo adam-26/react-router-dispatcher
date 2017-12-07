@@ -68,11 +68,10 @@ For the client app, use the exported `<RouteDispatcher>` component to render you
 import { RouterDispatcher } from 'react-router-dispatcher';
 
 const routeCfg = []; // same as server (react-router-config routes)
-const hasDispatchedActions = true; // true if rendered on server, otherwise false
 
 // render your app
 <Router ...>
-	<RouterDispatcher hasDispatchedActions={hasDispatchedActions} routes={routeCfg} dispatchActions={[['loadData']]} />
+	<RouterDispatcher routes={routeCfg} dispatchActions={[['loadData']]} />
 </Router>
 
 ```

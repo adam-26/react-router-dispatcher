@@ -101,11 +101,11 @@ class RouteDispatcher extends Component {
         loadingComponent: PropTypes.element,
 
         /**
-         * True if actions have been dispatched, otherwise false.
+         * True to dispatch actions on the first render, otherwise false.
          *
-         * If rendering on the server, this should be set to true on the initial client render.
+         * If rendering on the server, this should be set to false.
          */
-        hasDispatchedActions: PropTypes.bool,
+        dispatchActionsOnFirstRender: PropTypes.bool,
 
         /**
          * Helpers are passed to all action dispatchers
@@ -124,7 +124,7 @@ class RouteDispatcher extends Component {
       dispatchActionParams: {},
       dispatchActions: DEFAULT_DISPATCH_ACTIONS,
       routeComponentPropNames: DEFAULT_COMPONENT_PROP_NAMES,
-      hasDispatchedActions: false,
+      dispatchActionsOnFirstRender: true,
       loadingComponent: <div>Loading...</div>,
       render(routes, routeProps) {
         return renderRoutes(routes, routeProps);
@@ -139,7 +139,7 @@ class RouteDispatcher extends Component {
       super(props, context);
       this.state = {
         previousLocation: null,
-        hasDispatchedActions: props.hasDispatchedActions,
+        hasDispatchedActions: !props.dispatchActionsOnFirstRender,
         dispatchActions: standardizeDispatchActions(props.dispatchActions)
       };
     }
@@ -192,7 +192,7 @@ class RouteDispatcher extends Component {
             /* eslint-disable no-unused-vars */
             dispatchActions,
             routeComponentPropNames,
-            hasDispatchedActions,
+            dispatchActionsOnFirstRender,
             dispatchActionParams,
             match,
             history,
