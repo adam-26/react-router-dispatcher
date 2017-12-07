@@ -3,6 +3,7 @@ import invariant from 'invariant';
 import { withRouter } from 'react-router';
 import { parsePath } from 'history'
 import hoistNonReactStatic from 'hoist-non-react-statics';
+import reactDisplayName from 'react-display-name';
 import defineRoutes from './defineRoutes';
 import {
     RouteDispatcher,
@@ -13,7 +14,7 @@ import {
 
 const RouterDispatcher = withRouter(RouteDispatcher);
 
-function RouteDispatcherHoc(routeConfig, options) {
+function RouteDispatcherHoc(displayNamePrefix, routeConfig, options) {
     const routeDispatcher = ({ routes, ...props }) => {
         return (
             <RouterDispatcher
@@ -23,7 +24,7 @@ function RouteDispatcherHoc(routeConfig, options) {
             />);
     };
 
-    routeDispatcher.displayName = 'withRouter(RouteDispatcher)';
+    routeDispatcher.displayName = `${displayNamePrefix}(${reactDisplayName(RouterDispatcher)})`;
 
     routeDispatcher.propTypes = RouteDispatcher.propTypes;
 
@@ -31,8 +32,7 @@ function RouteDispatcherHoc(routeConfig, options) {
 }
 
 // use a factory method to simplify server usage
-function createRouteDispatcher(pathAnyQuery, routeConfig, options = {}) {
-    invariant(typeof pathAnyQuery === 'string', 'pathAnyQuery expects a string');
+function createRouteDispatchers(routeConfig, options = {}) {
     invariant(Array.isArray(routeConfig), 'routeConfig expects an array of routes');
 
     const dispatchOpts = Object.assign(
@@ -41,17 +41,24 @@ function createRouteDispatcher(pathAnyQuery, routeConfig, options = {}) {
         { routes: routeConfig });
 
     return {
-        dispatchOnServer: (dispatchActionParams) =>
-            RouterDispatcher.dispatch(
+        dispatchOnServer: (pathAnyQuery, dispatchActionParams) => {
+            invariant(typeof pathAnyQuery === 'string', 'pathAnyQuery expects a string');
+
+            return RouterDispatcher.dispatch(
                 parsePath(pathAnyQuery),
                 standardizeDispatchActions(options.dispatchActions || DEFAULT_DISPATCH_ACTIONS),
-                { ...dispatchOpts, dispatchActionParams }),
-        RouteDispatcher: RouteDispatcherHoc(routeConfig, { ...options, hasDispatchedActions: true })
+                {...dispatchOpts, dispatchActionParams})
+        },
+        ClientRouteDispatcher:    RouteDispatcherHoc('ClientRouteDispatcher', routeConfig, options),
+        UniversalRouteDispatcher: RouteDispatcherHoc(
+            'UniversalRouteDispatcher',
+            routeConfig,
+            { ...options, hasDispatchedActions: true })
     };
 }
 
 export {
     defineRoutes,
-    createRouteDispatcher,
+    createRouteDispatchers,
     RouterDispatcher as RouteDispatcher,
 };

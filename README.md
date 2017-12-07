@@ -34,27 +34,28 @@ yarn add react-router-dispatcher
 
 ##### server-side rendering
 
-If your building a universal application, use the `createRouteDispatcher` factory method to
+If your building a universal application, use the `createRouteDispatchers` factory method to
 create the `<RouteDispatcher>` component to render routes on **both client and server**.
 
 ```js
-import { createRouteDispatcher } from 'react-router-dispatcher';
+import { createRouteDispatchers } from 'react-router-dispatcher';
 
-// === Params ===
-const location = request.url; // current request URL
+// === route dispatcher configuration ===
 const routes = [...]; // react-router-config configuration
 const options = {
   dispatchActions: [['loadData']] // static methods to invoke
 };
 
-// Use the createRouteDispatcher factory, it returns a component and method for server-side rendering
-const { RouteDispatcher, dispatchOnServer } = createRouteDispatcher(location, routes, options);
+// Use the createRouteDispatchers factory, it returns a component and method for server-side rendering
+const { UniversalRouteDispatcher, dispatchOnServer } = createRouteDispatchers(routes, options);
 
+// === server-side render params ===
+const location = request.url; // current request URL
 const dispatchActionParams = { apiClient }; // passed to all dispatch action methods
 
-dispatchOnServer(dispatchActionParams).then(() => {
+dispatchOnServer(location, dispatchActionParams).then(() => {
   // render your application here
-  // Use the <RouteDispatcher /> component created by the factory method to render your app
+  // Use the <UniversalRouteDispatcher /> component created by the factory method to render your app
 });
 
 ```
@@ -74,6 +75,15 @@ const hasDispatchedActions = true; // true if rendered on server, otherwise fals
 	<RouterDispatcher hasDispatchedActions={hasDispatchedActions} routes={routeCfg} dispatchActions={[['loadData']]} />
 </Router>
 
+```
+
+**Alternatively**, the `createRouteDispatchers()` factory also returns a `ClientRouteDispatcher`.
+> This can be useful for **conditional** client _render_ **or** _hydrate_
+
+```js
+import { createRouteDispatchers } from 'react-router-dispatcher';
+
+const { ClientRouteDispatcher } = createRouteDispatchers(routes, options);
 ```
 
 ### Defining actions
