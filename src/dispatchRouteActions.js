@@ -36,7 +36,7 @@ function isRouteComponent(routeComponent) {
 }
 
 function addRouteComponent(component, match, route, routeComponentKey, target) {
-    target.push([component, match, route, routeComponentKey]);
+    target.push([component, match, { route, routeComponentKey }]);
 }
 
 export function resolveRouteComponents(branch, routeComponentPropNames) {
@@ -67,11 +67,11 @@ export function resolveActionSets(routeComponents, dispatchActions) {
     const actionSets = parseDispatchActions(dispatchActions);
     return actionSets.map((actionSet) => {
         const promises = [];
-        routeComponents.forEach(([component, match, route, routeComponentKey]) => {
+        routeComponents.forEach(([component, match, routerContext]) => {
             actionSet.forEach((action) => {
                 const componentAction = component[action];
                 if (typeof componentAction === 'function') {
-                    promises.push([componentAction, match, route, routeComponentKey]);
+                    promises.push([componentAction, match, routerContext]);
                 }
                 else if (typeof componentAction !== 'undefined') {
                     invariant(false, `Component '${getDisplayName(component)}' static action '${action}' is expected to be a function.`);
@@ -84,8 +84,8 @@ export function resolveActionSets(routeComponents, dispatchActions) {
 }
 
 function createActionSetPromise(actionSet, actionParams, location) {
-    return Promise.all(actionSet.map(([componentAction, match, route, routeComponentKey]) => {
-        return Promise.resolve(componentAction({ location, match }, actionParams, { route, routeComponentKey }));
+    return Promise.all(actionSet.map(([componentAction, match, routerContext]) => {
+        return Promise.resolve(componentAction({ location, match }, actionParams, routerContext));
     }));
 }
 

@@ -165,6 +165,8 @@ Resolves all route components for a requested location and a given set of routes
 import { matchRouteComponents } from 'react-router-dispatcher';
 
 const matchedRoutes = matchRouteComponents(location, routes, routeComponentPropNames);
+const [component, match, routerContext] = matchedRoutes[0];
+const { route, routeComponentKey } = routerContext;
 ```
 
 
