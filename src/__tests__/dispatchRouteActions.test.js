@@ -18,7 +18,7 @@ describe('dispatchRouteActions', () => {
 
     const dispatchActions = [['primary', 'secondary']];
     const routeComponentPropNames = ['component'];
-    const dispatchActionParams = {};
+    const actionParams = {};
     let location;
     let routes;
 
@@ -109,21 +109,21 @@ describe('dispatchRouteActions', () => {
                 [(m, h) => setTimeout(() => mocks[0](m, h), 300), match0],
                 [(m, h) => setTimeout(() => mocks[1](m, h), 200), match0],
                 [(m, h) => setTimeout(() => mocks[2](m, h), 100), match0]
-            ]], dispatchActionParams);
+            ]], actionParams);
 
             reduced.then(() => {
                 setTimeout(() => {
                     expect(mocks[0].mock.calls).toHaveLength(1);
                     expect(mocks[0].mock.calls[0][0]).toEqual(match0);
-                    expect(mocks[0].mock.calls[0][1]).toEqual(dispatchActionParams);
+                    expect(mocks[0].mock.calls[0][1]).toEqual(actionParams);
 
                     expect(mocks[1].mock.calls).toHaveLength(1);
                     expect(mocks[1].mock.calls[0][0]).toEqual(match0);
-                    expect(mocks[1].mock.calls[0][1]).toEqual(dispatchActionParams);
+                    expect(mocks[1].mock.calls[0][1]).toEqual(actionParams);
 
                     expect(mocks[2].mock.calls).toHaveLength(1);
                     expect(mocks[2].mock.calls[0][0]).toEqual(match0);
-                    expect(mocks[2].mock.calls[0][1]).toEqual(dispatchActionParams);
+                    expect(mocks[2].mock.calls[0][1]).toEqual(actionParams);
 
                     // verify order
                     expect(order).toEqual([2,1,0]);
@@ -147,21 +147,21 @@ describe('dispatchRouteActions', () => {
                 [[(m, h) => setTimeout(() => mocks[0](m, h), 300), match0]],
                 [[(m, h) => setTimeout(() => mocks[1](m, h), 200), match0]],
                 [[(m, h) => setTimeout(() => mocks[2](m, h), 100), match0]]
-            ], dispatchActionParams);
+            ], actionParams);
 
             reduced.then(() => {
                 setTimeout(() => {
                     expect(mocks[0].mock.calls).toHaveLength(1);
                     expect(mocks[0].mock.calls[0][0]).toEqual(match0);
-                    expect(mocks[0].mock.calls[0][1]).toEqual(dispatchActionParams);
+                    expect(mocks[0].mock.calls[0][1]).toEqual(actionParams);
 
                     expect(mocks[1].mock.calls).toHaveLength(1);
                     expect(mocks[1].mock.calls[0][0]).toEqual(match0);
-                    expect(mocks[1].mock.calls[0][1]).toEqual(dispatchActionParams);
+                    expect(mocks[1].mock.calls[0][1]).toEqual(actionParams);
 
                     expect(mocks[2].mock.calls).toHaveLength(1);
                     expect(mocks[2].mock.calls[0][0]).toEqual(match0);
-                    expect(mocks[2].mock.calls[0][1]).toEqual(dispatchActionParams);
+                    expect(mocks[2].mock.calls[0][1]).toEqual(actionParams);
 
                     // verify order
                     expect(order).toEqual([2,1,0]);
@@ -173,7 +173,7 @@ describe('dispatchRouteActions', () => {
         test('returns promise when no routes matched', done => {
             const p = dispatchRouteActions(
                 { pathname: '/helloworld' },
-                { routes: [], dispatchActions, routeComponentPropNames, dispatchActionParams });
+                { routes: [], dispatchActions, routeComponentPropNames, actionParams });
 
             p.then(() => {
                 expect(mockHomeAction.mock.calls).toHaveLength(0);
@@ -185,7 +185,7 @@ describe('dispatchRouteActions', () => {
         test('returns promise when routes matched - dispatchAction function', done => {
             const p = dispatchRouteActions(
                 { pathname: '/' },
-                { routes, routeComponentPropNames, dispatchActionParams, dispatchActions: () => [['primary', 'secondary']]});
+                { routes, routeComponentPropNames, actionParams, dispatchActions: () => [['primary', 'secondary']]});
 
             p.then(() => {
                 expect(mockHomeAction.mock.calls).toHaveLength(1);
@@ -199,7 +199,7 @@ describe('dispatchRouteActions', () => {
                 expect(actionParams[0][0].url).toBeDefined();
 
                 // verify action params
-                expect(actionParams[0][1]).toEqual(dispatchActionParams);
+                expect(actionParams[0][1]).toEqual(actionParams);
 
                 // verify route params
                 expect(actionParams[0][2].route).toBeDefined();
@@ -211,7 +211,7 @@ describe('dispatchRouteActions', () => {
         test('returns promise when routes matched - flat', done => {
             const p = dispatchRouteActions(
                 { pathname: '/' },
-                { routes, dispatchActions, routeComponentPropNames, dispatchActionParams });
+                { routes, dispatchActions, routeComponentPropNames, actionParams });
 
             p.then(() => {
                 expect(mockHomeAction.mock.calls).toHaveLength(1);
@@ -224,7 +224,7 @@ describe('dispatchRouteActions', () => {
         test('returns promise when routes matched - serial', done => {
             const p = dispatchRouteActions(
                 { pathname: '/' },
-                { routes, dispatchActions: [['primary'], ['secondary']], routeComponentPropNames, dispatchActionParams });
+                { routes, dispatchActions: [['primary'], ['secondary']], routeComponentPropNames, actionParams });
 
             p.then(() => {
                 expect(mockHomeAction.mock.calls).toHaveLength(1);

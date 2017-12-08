@@ -7,10 +7,6 @@
 [![Code Climate](https://img.shields.io/codeclimate/github/adam-26/react-router-dispatcher.svg)](https://codeclimate.com/github/adam-26/react-router-dispatcher)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 
----
-**WARNING: This is currently a _Work In Progress_, it should probably be considered **alpha**. The API may change.**
----
-
 react-router-dispatcher is designed to work with [react-router v4.x](https://github.com/ReactTraining/react-router), it:
   * invokes static methods of _route components_ before rendering
   * requires using [react-router-config v4.x](https://github.com/ReactTraining/react-router/tree/master/packages/react-router-config) route configuration
@@ -35,7 +31,7 @@ yarn add react-router-dispatcher
 ##### server-side rendering
 
 If your building a universal application, use the `createRouteDispatchers` factory method to
-create the `<RouteDispatcher>` component to render routes on **both client and server**.
+create the `<UniversalRouteDispatcher>` component to render routes on **both client and server**.
 
 ```js
 import { createRouteDispatchers } from 'react-router-dispatcher';
@@ -51,9 +47,9 @@ const { UniversalRouteDispatcher, dispatchOnServer } = createRouteDispatchers(ro
 
 // === server-side render params ===
 const location = request.url; // current request URL
-const dispatchActionParams = { apiClient }; // passed to all dispatch action methods
+const actionParams = { apiClient }; // passed to all dispatch action methods
 
-dispatchOnServer(location, dispatchActionParams /*, options */).then(() => {
+dispatchOnServer(location, actionParams /*, options */).then(() => {
   // render your application here
   // Use the <UniversalRouteDispatcher /> component created by the factory method to render your app
 });
@@ -117,28 +113,29 @@ MyComponent.loadData = (match, helpers) => {
 
 ### Configuration options
 
-`dispatchActions`:
+##### `dispatchActions`
 Configure the **static method(s)** defined any any _route component_ to invoke before rendering.
 Accepts:
   * a string, the default is `loadData` - any component with a `static loadData = (match, helpers) => {}` will be invoked before rendering
   * an array, `['loadData', 'parseData']` - all methods will be invoked in parallel before rendering
   * nested array, `[['loadData'], ['parseData']]` - each inner array will be invoked serially (ie: `loadData` will be invoked on all components, before `parseData` is invoked on all components)
-  * a function, `dispatchActions(location, dispatchActionParams)`. Return one of the previously defined types (string, array, nested array).
+  * a function, `dispatchActions(location, actionParams)`. Return one of the previously defined types (string, array, nested array).
 
-`routeComponentPropNames`:
+##### `routeComponentPropNames`
 Configure the **prop** names of _route components_ that are known to be react **components**
 The default value is `component`.
 
-`dispatchActionParams`:
+##### `actionParams`
 Any value can be assigned to the params, the value is passed to all **static action methods**, common usages include passing api clients and application state (such as a redux store)
 
 ### RouteDispatcher Props
+
 >All configuration options can be assigned as props
 
-`loadingIndicator`:
+##### `loadingIndicator`
 If server-side rendering is **not** used, a _loading component_ will be displayed to the user when dispatching actions on initial load. Pass a component to customize the loading UI.
 
-`render`:
+##### `render`
 Allows the render method to be customized, you **must** invoke the react-router `renderRoutes` method within the render method.
 
 ### Enhancing Routes

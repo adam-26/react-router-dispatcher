@@ -83,25 +83,25 @@ export function resolveActionSets(routeComponents, dispatchActions) {
     });
 }
 
-function createActionSetPromise(actionSet, dispatchActionParams) {
+function createActionSetPromise(actionSet, actionParams) {
     return Promise.all(actionSet.map(([componentAction, match, route, componentRouteKey]) => {
-        return Promise.resolve(componentAction(match, dispatchActionParams, { route, componentRouteKey }));
+        return Promise.resolve(componentAction(match, actionParams, { route, componentRouteKey }));
     }));
 }
 
-export function reduceActionSets(actionSets, dispatchActionParams) {
-    let promiseActionSet = createActionSetPromise(actionSets.shift(), dispatchActionParams);
+export function reduceActionSets(actionSets, actionParams) {
+    let promiseActionSet = createActionSetPromise(actionSets.shift(), actionParams);
 
     while (actionSets.length > 0) {
         const actionSet = actionSets.shift();
-        promiseActionSet = promiseActionSet.then(() => createActionSetPromise(actionSet, dispatchActionParams));
+        promiseActionSet = promiseActionSet.then(() => createActionSetPromise(actionSet, actionParams));
     }
 
     return promiseActionSet;
 }
 
 export default function dispatchRouteActions(location, props) {
-    const { routes, dispatchActions, routeComponentPropNames, dispatchActionParams } = props;
+    const { routes, dispatchActions, routeComponentPropNames, actionParams } = props;
     const branch = matchRoutes(routes, location.pathname);
     if (!branch.length) {
         return Promise.resolve();
@@ -111,7 +111,7 @@ export default function dispatchRouteActions(location, props) {
     const routeComponents = resolveRouteComponents(branch, routeComponentPropNames);
     const actionSets = resolveActionSets(
         routeComponents,
-        typeof dispatchActions === 'function' ? dispatchActions(location, dispatchActionParams) : dispatchActions);
+        typeof dispatchActions === 'function' ? dispatchActions(location, actionParams) : dispatchActions);
 
-    return reduceActionSets(actionSets, dispatchActionParams);
+    return reduceActionSets(actionSets, actionParams);
 }
