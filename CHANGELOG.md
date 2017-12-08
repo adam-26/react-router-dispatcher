@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.0.0-beta.11"></a>
+# [2.0.0-beta.11](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.10...v2.0.0-beta.11) (2017-12-08)
+
+
+### Bug Fixes
+
+* **SSR:** dispatch ([#30](https://github.com/adam-26/react-router-dispatcher/issues/30)) ([dc3d804](https://github.com/adam-26/react-router-dispatcher/commit/dc3d804))
+
+
+
 <a name="2.0.0-beta.10"></a>
 # [2.0.0-beta.10](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.9...v2.0.0-beta.10) (2017-12-08)
 
