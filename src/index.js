@@ -41,15 +41,33 @@ function createRouteDispatchers(routeConfig, options = {}) {
         { routes: routeConfig });
 
     return {
-        dispatchOnServer: (pathAnyQuery, dispatchActionParams) => {
-            invariant(typeof pathAnyQuery === 'string', 'pathAnyQuery expects a string');
+
+        /**
+         * dispatch route actions on the server.
+         *
+         * @param pathname string the requested url path
+         * @param dispatchActionParams Object parameters passed to all actions
+         * @param options [Object] options for server dispatching
+         * @returns {*} Components for rendering routes
+         */
+        dispatchOnServer: (pathname, dispatchActionParams, options) => {
+            invariant(typeof pathname === 'string', 'pathAnyQuery expects a string');
+
+            const { dispatchActions, ...serverOptions } = options;
+            const serverDispatchActions = standardizeDispatchActions(
+                dispatchActions || options.dispatchActions || DEFAULT_DISPATCH_ACTIONS);
 
             return RouterDispatcher.dispatch(
-                parsePath(pathAnyQuery),
-                standardizeDispatchActions(options.dispatchActions || DEFAULT_DISPATCH_ACTIONS),
-                {...dispatchOpts, dispatchActionParams})
+                parsePath(pathname),
+                serverDispatchActions,
+                {...dispatchOpts, ...serverOptions, dispatchActionParams})
         },
-        ClientRouteDispatcher:    RouteDispatcherHoc('ClientRouteDispatcher', routeConfig, options),
+
+        ClientRouteDispatcher: RouteDispatcherHoc(
+            'ClientRouteDispatcher',
+            routeConfig,
+            options),
+
         UniversalRouteDispatcher: RouteDispatcherHoc(
             'UniversalRouteDispatcher',
             routeConfig,

@@ -53,7 +53,7 @@ const { UniversalRouteDispatcher, dispatchOnServer } = createRouteDispatchers(ro
 const location = request.url; // current request URL
 const dispatchActionParams = { apiClient }; // passed to all dispatch action methods
 
-dispatchOnServer(location, dispatchActionParams).then(() => {
+dispatchOnServer(location, dispatchActionParams /*, options */).then(() => {
   // render your application here
   // Use the <UniversalRouteDispatcher /> component created by the factory method to render your app
 });
