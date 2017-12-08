@@ -11,6 +11,7 @@ import {
     DEFAULT_DISPATCH_ACTIONS,
     DEFAULT_COMPONENT_PROP_NAMES
 } from './RouteDispatcher';
+import {matchRouteComponents} from './dispatchRouteActions';
 
 const RouterDispatcher = withRouter(RouteDispatcher);
 
@@ -79,4 +80,5 @@ export {
     defineRoutes,
     createRouteDispatchers,
     RouterDispatcher as RouteDispatcher,
+    matchRouteComponents
 };

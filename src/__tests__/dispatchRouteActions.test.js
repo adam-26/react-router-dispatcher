@@ -14,7 +14,7 @@ describe('dispatchRouteActions', () => {
     let order = [];
     let orderedParams = [];
     const appendOrder = (id) => order.push(id);
-    const appendParams = (match, params, routeParams) => orderedParams.push([match, params, routeParams]);
+    const appendParams = (routeParams, params, routeCtx) => orderedParams.push([routeParams, params, routeCtx]);
 
     const dispatchActions = [['primary', 'secondary']];
     const routeComponentPropNames = ['component'];
@@ -26,8 +26,8 @@ describe('dispatchRouteActions', () => {
         order = []; // reset
         orderedParams = [];
 
-        Root.primary = mockRootAction = jest.fn((match, params, routeParams) => { appendOrder(0); appendParams(match, params, routeParams) });
-        Home.secondary = mockHomeAction = jest.fn((match, params, routeParams) => { appendOrder(1); appendParams(match, params, routeParams) });
+        Root.primary = mockRootAction = jest.fn((routeParams, actionParams, routerCtx) => { appendOrder(0); appendParams(routeParams, actionParams, routerCtx) });
+        Home.secondary = mockHomeAction = jest.fn((routeParams, actionParams, routerCtx) => { appendOrder(1); appendParams(routeParams, actionParams, routerCtx) });
 
         routes = [
             { component: Root,
@@ -104,25 +104,26 @@ describe('dispatchRouteActions', () => {
                 jest.fn(() => appendOrder(2))
             ];
 
-            const match0 = {match: '0'};
+            const match = {match: '0'};
+            const location = { pathname: '/' };
             const reduced = reduceActionSets([[
-                [(m, h) => setTimeout(() => mocks[0](m, h), 300), match0],
-                [(m, h) => setTimeout(() => mocks[1](m, h), 200), match0],
-                [(m, h) => setTimeout(() => mocks[2](m, h), 100), match0]
-            ]], actionParams);
+                [(m, h) => setTimeout(() => mocks[0](m, h), 300), match],
+                [(m, h) => setTimeout(() => mocks[1](m, h), 200), match],
+                [(m, h) => setTimeout(() => mocks[2](m, h), 100), match]
+            ]], actionParams, location);
 
             reduced.then(() => {
                 setTimeout(() => {
                     expect(mocks[0].mock.calls).toHaveLength(1);
-                    expect(mocks[0].mock.calls[0][0]).toEqual(match0);
+                    expect(mocks[0].mock.calls[0][0]).toEqual({ location, match });
                     expect(mocks[0].mock.calls[0][1]).toEqual(actionParams);
 
                     expect(mocks[1].mock.calls).toHaveLength(1);
-                    expect(mocks[1].mock.calls[0][0]).toEqual(match0);
+                    expect(mocks[1].mock.calls[0][0]).toEqual({ location, match });
                     expect(mocks[1].mock.calls[0][1]).toEqual(actionParams);
 
                     expect(mocks[2].mock.calls).toHaveLength(1);
-                    expect(mocks[2].mock.calls[0][0]).toEqual(match0);
+                    expect(mocks[2].mock.calls[0][0]).toEqual({ location, match });
                     expect(mocks[2].mock.calls[0][1]).toEqual(actionParams);
 
                     // verify order
@@ -142,25 +143,26 @@ describe('dispatchRouteActions', () => {
                 jest.fn(() => appendOrder(2))
             ];
 
-            const match0 = {match: '0'};
+            const match = {match: '0'};
+            const location = { pathname: '/' };
             const reduced = reduceActionSets([
-                [[(m, h) => setTimeout(() => mocks[0](m, h), 300), match0]],
-                [[(m, h) => setTimeout(() => mocks[1](m, h), 200), match0]],
-                [[(m, h) => setTimeout(() => mocks[2](m, h), 100), match0]]
-            ], actionParams);
+                [[(m, h) => setTimeout(() => mocks[0](m, h), 300), match]],
+                [[(m, h) => setTimeout(() => mocks[1](m, h), 200), match]],
+                [[(m, h) => setTimeout(() => mocks[2](m, h), 100), match]]
+            ], actionParams, location);
 
             reduced.then(() => {
                 setTimeout(() => {
                     expect(mocks[0].mock.calls).toHaveLength(1);
-                    expect(mocks[0].mock.calls[0][0]).toEqual(match0);
+                    expect(mocks[0].mock.calls[0][0]).toEqual({ location, match });
                     expect(mocks[0].mock.calls[0][1]).toEqual(actionParams);
 
                     expect(mocks[1].mock.calls).toHaveLength(1);
-                    expect(mocks[1].mock.calls[0][0]).toEqual(match0);
+                    expect(mocks[1].mock.calls[0][0]).toEqual({ location, match });
                     expect(mocks[1].mock.calls[0][1]).toEqual(actionParams);
 
                     expect(mocks[2].mock.calls).toHaveLength(1);
-                    expect(mocks[2].mock.calls[0][0]).toEqual(match0);
+                    expect(mocks[2].mock.calls[0][0]).toEqual({ location, match });
                     expect(mocks[2].mock.calls[0][1]).toEqual(actionParams);
 
                     // verify order
@@ -193,17 +195,15 @@ describe('dispatchRouteActions', () => {
                 expect(order).toEqual([0, 1]);
 
                 // verify match params
-                expect(orderedParams[0][0].params).toBeDefined();
-                expect(orderedParams[0][0].isExact).toBeDefined();
-                expect(orderedParams[0][0].path).toBeDefined();
-                expect(orderedParams[0][0].url).toBeDefined();
+                expect(orderedParams[0][0].location).toBeDefined();
+                expect(orderedParams[0][0].match).toBeDefined();
 
                 // verify action params
                 expect(orderedParams[0][1]).toEqual(actionParams);
 
                 // verify route params
                 expect(orderedParams[0][2].route).toBeDefined();
-                expect(orderedParams[0][2].componentRouteKey).toBeDefined();
+                expect(orderedParams[0][2].routeComponentKey).toBeDefined();
                 done();
             });
         });
