@@ -135,7 +135,7 @@ Any value can be assigned to the params, the value is passed to all **static act
 ### RouteDispatcher Props
 >All configuration options can be assigned as props
 
-`loadingComponent`:
+`loadingIndicator`:
 If server-side rendering is **not** used, a _loading component_ will be displayed to the user when dispatching actions on initial load. Pass a component to customize the loading UI.
 
 `render`:

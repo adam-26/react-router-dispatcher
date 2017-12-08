@@ -62,6 +62,10 @@ function isDispatchActionsEqual(arr1, arr2) {
     return true;
 }
 
+const DefaultLoadingIndicator = () => (
+    <div>Loading...</div>
+);
+
 const DEFAULT_DISPATCH_ACTIONS = [['loadData']];
 const DEFAULT_COMPONENT_PROP_NAMES = ['component', 'components'];
 
@@ -98,7 +102,11 @@ class RouteDispatcher extends Component {
         /**
          * The component to render when data is initially loading
          */
-        loadingComponent: PropTypes.element,
+        loadingIndicator: PropTypes.oneOfType([
+            PropTypes.node,
+            PropTypes.element,
+            PropTypes.func
+        ]),
 
         /**
          * True to dispatch actions on the first render, otherwise false.
@@ -125,7 +133,7 @@ class RouteDispatcher extends Component {
       dispatchActions: DEFAULT_DISPATCH_ACTIONS,
       routeComponentPropNames: DEFAULT_COMPONENT_PROP_NAMES,
       dispatchActionsOnFirstRender: true,
-      loadingComponent: <div>Loading...</div>,
+      loadingIndicator: DefaultLoadingIndicator,
       render(routes, routeProps) {
         return renderRoutes(routes, routeProps);
       },
@@ -187,7 +195,7 @@ class RouteDispatcher extends Component {
             location,
             routes,
             render,
-            loadingComponent,
+            loadingIndicator,
             // DO NOT DELETE THESE PROPS - this is the easiest way to access route props
             /* eslint-disable no-unused-vars */
             dispatchActions,
@@ -202,7 +210,9 @@ class RouteDispatcher extends Component {
 
         if (!this.state.hasDispatchedActions) {
             // Display a loading indicator until data is loaded
-            return loadingComponent;
+            return React.isValidElement(loadingIndicator) || typeof loadingIndicator === 'function' ?
+                React.createElement(loadingIndicator) :
+                <div>{loadingIndicator}</div>;
         }
 
         return (
