@@ -45,20 +45,20 @@ function createRouteDispatchers(routeConfig, options = {}) {
         /**
          * dispatch route actions on the server.
          *
-         * @param pathname string the requested url path
+         * @param pathAndQuery string the requested url path and query
          * @param dispatchActionParams Object parameters passed to all actions
          * @param options [Object] options for server dispatching
          * @returns {*} Components for rendering routes
          */
-        dispatchOnServer: (pathname, dispatchActionParams, options) => {
-            invariant(typeof pathname === 'string', 'pathAnyQuery expects a string');
+        dispatchOnServer: (pathAndQuery, dispatchActionParams, options) => {
+            invariant(typeof pathAndQuery === 'string', 'pathAnyQuery expects a string');
 
             const { dispatchActions, ...serverOptions } = options;
             const serverDispatchActions = standardizeDispatchActions(
                 dispatchActions || options.dispatchActions || DEFAULT_DISPATCH_ACTIONS);
 
             return RouterDispatcher.dispatch(
-                parsePath(pathname),
+                parsePath(pathAndQuery),
                 serverDispatchActions,
                 {...dispatchOpts, ...serverOptions, dispatchActionParams})
         },
