@@ -7,8 +7,8 @@ import { createPath } from 'history';
 import dispatchRouteActions, { parseDispatchActions } from './dispatchRouteActions';
 
 function getDispatcherProps(props) {
-  const { routes, routeComponentPropNames, dispatchActionParams } = props;
-  return { routes, routeComponentPropNames, dispatchActionParams };
+  const { routes, routeComponentPropNames, actionParams } = props;
+  return { routes, routeComponentPropNames, actionParams };
 }
 
 function standardizeDispatchActions(dispatchActions) {
@@ -118,7 +118,7 @@ class RouteDispatcher extends Component {
         /**
          * Helpers are passed to all action dispatchers
          */
-        dispatchActionParams: PropTypes.any,
+        actionParams: PropTypes.any,
 
         /**
         * React router props
@@ -129,7 +129,7 @@ class RouteDispatcher extends Component {
     };
 
     static defaultProps = {
-      dispatchActionParams: {},
+      actionParams: {},
       dispatchActions: DEFAULT_DISPATCH_ACTIONS,
       routeComponentPropNames: DEFAULT_COMPONENT_PROP_NAMES,
       dispatchActionsOnFirstRender: true,
@@ -201,7 +201,7 @@ class RouteDispatcher extends Component {
             dispatchActions,
             routeComponentPropNames,
             dispatchActionsOnFirstRender,
-            dispatchActionParams,
+            actionParams,
             match,
             history,
             /* eslint-enable no-unused-vars */
