@@ -160,9 +160,30 @@ describe('RouteDispatcher', () => {
     });
 
     describe('render', () => {
-        test('displays loading component before actions have been dispatched', () => {
+        test('displays default loading component before actions have been dispatched', () => {
             const wrapper = shallow(<RouteDispatcher location={location} routes={defaultRoutes} dispatchActionsOnFirstRender={true} />);
             expect(wrapper.html()).toBe('<div>Loading...</div>');
+        });
+
+        test('displays loading component before actions have been dispatched', () => {
+            class Indicator extends React.Component {
+                render() {
+                    return <div>component</div>;
+                }
+            }
+
+            const wrapper = shallow(<RouteDispatcher loadingIndicator={Indicator} location={location} routes={defaultRoutes} dispatchActionsOnFirstRender={true} />);
+            expect(wrapper.html()).toBe('<div>component</div>');
+        });
+
+        test('displays loading stateless component before actions have been dispatched', () => {
+            const wrapper = shallow(<RouteDispatcher loadingIndicator={() => <div>stateless</div>} location={location} routes={defaultRoutes} dispatchActionsOnFirstRender={true} />);
+            expect(wrapper.html()).toBe('<div>stateless</div>');
+        });
+
+        test('displays loading markup before actions have been dispatched', () => {
+            const wrapper = shallow(<RouteDispatcher loadingIndicator="markup" location={location} routes={defaultRoutes} dispatchActionsOnFirstRender={true} />);
+            expect(wrapper.html()).toBe('<div>markup</div>');
         });
 
         test('renders routes', () => {
