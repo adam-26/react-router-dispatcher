@@ -35,8 +35,8 @@ function isRouteComponent(routeComponent) {
     return React.isValidElement(routeComponent) || typeof routeComponent === 'function';
 }
 
-function addRouteComponent(component, match, route, componentRouteKey, target) {
-    target.push([component, match, route, componentRouteKey]);
+function addRouteComponent(component, match, route, routeComponentKey, target) {
+    target.push([component, match, route, routeComponentKey]);
 }
 
 export function resolveRouteComponents(branch, routeComponentPropNames) {
@@ -67,11 +67,11 @@ export function resolveActionSets(routeComponents, dispatchActions) {
     const actionSets = parseDispatchActions(dispatchActions);
     return actionSets.map((actionSet) => {
         const promises = [];
-        routeComponents.forEach(([component, match, route, componentRouteKey]) => {
+        routeComponents.forEach(([component, match, route, routeComponentKey]) => {
             actionSet.forEach((action) => {
                 const componentAction = component[action];
                 if (typeof componentAction === 'function') {
-                    promises.push([componentAction, match, route, componentRouteKey]);
+                    promises.push([componentAction, match, route, routeComponentKey]);
                 }
                 else if (typeof componentAction !== 'undefined') {
                     invariant(false, `Component '${getDisplayName(component)}' static action '${action}' is expected to be a function.`);
@@ -83,35 +83,44 @@ export function resolveActionSets(routeComponents, dispatchActions) {
     });
 }
 
-function createActionSetPromise(actionSet, actionParams) {
-    return Promise.all(actionSet.map(([componentAction, match, route, componentRouteKey]) => {
-        return Promise.resolve(componentAction(match, actionParams, { route, componentRouteKey }));
+function createActionSetPromise(actionSet, actionParams, location) {
+    return Promise.all(actionSet.map(([componentAction, match, route, routeComponentKey]) => {
+        return Promise.resolve(componentAction({ location, match }, actionParams, { route, routeComponentKey }));
     }));
 }
 
-export function reduceActionSets(actionSets, actionParams) {
-    let promiseActionSet = createActionSetPromise(actionSets.shift(), actionParams);
+export function reduceActionSets(actionSets, actionParams, location) {
+    let promiseActionSet = createActionSetPromise(actionSets.shift(), actionParams, location);
 
     while (actionSets.length > 0) {
         const actionSet = actionSets.shift();
-        promiseActionSet = promiseActionSet.then(() => createActionSetPromise(actionSet, actionParams));
+        promiseActionSet = promiseActionSet.then(() => createActionSetPromise(actionSet, actionParams, location));
     }
 
     return promiseActionSet;
 }
 
-export default function dispatchRouteActions(location, props) {
-    const { routes, dispatchActions, routeComponentPropNames, actionParams } = props;
+export function matchRouteComponents(location, routes, routeComponentPropNames) {
     const branch = matchRoutes(routes, location.pathname);
     if (!branch.length) {
-        return Promise.resolve();
+        return [];
     }
 
+    return resolveRouteComponents(branch, routeComponentPropNames);
+}
+
+export default function dispatchRouteActions(location, props) {
+    const { routes, dispatchActions, routeComponentPropNames, actionParams } = props;
+
     // Determine all RouteComponent(s) matched for the current route
-    const routeComponents = resolveRouteComponents(branch, routeComponentPropNames);
+    const routeComponents = matchRouteComponents(location, routes, routeComponentPropNames);
+    if (routeComponents.length === 0) {
+        return Promise.resolve();
+    }
+    
     const actionSets = resolveActionSets(
         routeComponents,
         typeof dispatchActions === 'function' ? dispatchActions(location, actionParams) : dispatchActions);
 
-    return reduceActionSets(actionSets, actionParams);
+    return reduceActionSets(actionSets, actionParams, location);
 }

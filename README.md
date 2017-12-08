@@ -90,9 +90,13 @@ An action is simply a **static method** defined on a component. Its _recommended
 ```js
 export default class MyComponent extents React.Component {
 
-  static loadData = (match, helpers) => {
+  static loadData = (routeProps, actionParams, routerCtx) => {
+    const { location, match } = routeProps;
     const {params, isExact, path, url} = match; // match from react-router
-    return Promise.resolve(helpers.api.loadData(params.id));
+    
+    const { route, routeComponentKey } = routerCtx;
+    
+    return Promise.resolve(actionParams.api.loadData(params.id));
   };
 
   // ...render, etc.
@@ -106,8 +110,8 @@ const MyComponent = (props) => {
 	// render here
 };
 
-MyComponent.loadData = (match, helpers) => {
-	return Promise.resolve(helpers.api.loadData(match.params.id));
+MyComponent.loadData = (match, actionParams) => {
+	return Promise.resolve(actionParams.api.loadData(match.params.id));
 };
 ```
 
@@ -116,7 +120,7 @@ MyComponent.loadData = (match, helpers) => {
 ##### `dispatchActions`
 Configure the **static method(s)** defined any any _route component_ to invoke before rendering.
 Accepts:
-  * a string, the default is `loadData` - any component with a `static loadData = (match, helpers) => {}` will be invoked before rendering
+  * a string, the default is `loadData` - any component with a `static loadData = (routeProps, actionParams, routerCtx) => {}` will be invoked before rendering
   * an array, `['loadData', 'parseData']` - all methods will be invoked in parallel before rendering
   * nested array, `[['loadData'], ['parseData']]` - each inner array will be invoked serially (ie: `loadData` will be invoked on all components, before `parseData` is invoked on all components)
   * a function, `dispatchActions(location, actionParams)`. Return one of the previously defined types (string, array, nested array).
@@ -138,7 +142,9 @@ If server-side rendering is **not** used, a _loading component_ will be displaye
 ##### `render`
 Allows the render method to be customized, you **must** invoke the react-router `renderRoutes` method within the render method.
 
-### Enhancing Routes
+### Utilities
+
+#### defineRoutes
 
 The `defineRoutes` utility method automatically assigns `keys` to routes that don't have a key manually assigned.
 This key can be accessed from **dispatch actions** to determine the route that is responsible for invoking the action.
@@ -150,6 +156,17 @@ const routes = defineRoutes([
 	// define react-router-config routes here
 ]);
 ```
+
+#### matchRouteComponents
+
+Resolves all route components for a requested location and a given set of routes.
+
+```js
+import { matchRouteComponents } from 'react-router-dispatcher';
+
+const matchedRoutes = matchRouteComponents(location, routes, routeComponentPropNames);
+```
+
 
 ### Contribute
 For questions or issues, please [open an issue](https://github.com/adam-26/react-router-dispatcher/issues), and you're welcome to submit a PR for bug fixes and feature requests.
