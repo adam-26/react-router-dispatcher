@@ -49,12 +49,47 @@ const { UniversalRouteDispatcher, dispatchOnServer } = createRouteDispatchers(ro
 const location = request.url; // current request URL
 const actionParams = { apiClient }; // passed to all dispatch action methods
 
+TODO - use ACTION (functions), instead of plain-text... AND - support for CLIENT (requires 'reduceClientProps' func)
+TODO: dispatchOnServer(location, [[loadData(store)], [loadMetadata()]])
+
 dispatchOnServer(location, actionParams /*, options */).then(() => {
   // render your application here
   // Use the <UniversalRouteDispatcher /> component created by the factory method to render your app
 });
 
 ```
+
+TODO - recommended pattern:
+TODO #1. Create a single func that wraps all actions - use if both client and server
+         Abstract the DATA for the actions, so that server-specific stuff is NOT bundled
+
+TODO *** BUT -> what about the <Components /> that also need access to the actions? pass actions -> factory, actions ARE factories?
+function createActions({ store }) {
+  return [
+    [loadData(store)],
+    [loadMetadata()]
+  ];
+}
+
+function exampleAction(dataStore) {
+    // TODO: Investigate server usage...
+    return (_PARAMS_) => {
+        // TODO: is/could/can such a design also be used on the server? Combining server/client action(s) - bad idea?
+        const param = dataStore || {}; //
+        return {
+            actionName: '',
+            params: {
+
+            },
+
+            // ALL client actions MUST be synchronous ?? YES.
+            reduceClientProps: (props) => {
+                return { ...props, metadata: param };
+            }
+        };
+    };
+}
+
 
 ##### client rendering
 

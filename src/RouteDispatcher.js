@@ -19,7 +19,7 @@ function standardizeDispatchActions(dispatchActions) {
     return parseDispatchActions(dispatchActions);
 }
 
-function isDispatchActionsEqual(arr1, arr2) {
+function isDispatchActionsEqual(arr1, arr2) { // TODO: Update for FUNCTION(S) - test.
     // Determine if a function was passed.
     const isFunc1 = typeof arr1 === 'function';
     const isFunc2 = typeof arr2 === 'function';
@@ -66,7 +66,6 @@ const DefaultLoadingIndicator = () => (
     <div>Loading...</div>
 );
 
-const DEFAULT_DISPATCH_ACTIONS = [['loadData']];
 const DEFAULT_COMPONENT_PROP_NAMES = ['component', 'components'];
 
 class RouteDispatcher extends Component {
@@ -82,17 +81,16 @@ class RouteDispatcher extends Component {
         routes: PropTypes.array.isRequired,
 
         /**
-         * The name(s) of of static action dispatcher functions to invoke on route components.
+         * The action(s) to invoke on route components.
          *
-         * This can be a string, and array, or an array or arrays. When an array of arrays,
+         * This can be an array of functions, or an array of arrays. When an array of arrays,
          * each array of actions is dispatched serially.
          */
-        dispatchActions: PropTypes.oneOfType([
-            PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
-            PropTypes.arrayOf(PropTypes.string),
-            PropTypes.string,
+        actions: PropTypes.oneOfType([
+            PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.func)),
+            PropTypes.arrayOf(PropTypes.func),
             PropTypes.func
-        ]),
+        ]).isRequired,
 
         /**
          * The name(s) of props on route components that can contain action dispatchers
@@ -130,7 +128,6 @@ class RouteDispatcher extends Component {
 
     static defaultProps = {
       actionParams: {},
-      dispatchActions: DEFAULT_DISPATCH_ACTIONS,
       routeComponentPropNames: DEFAULT_COMPONENT_PROP_NAMES,
       dispatchActionsOnFirstRender: true,
       loadingIndicator: DefaultLoadingIndicator,
@@ -139,8 +136,8 @@ class RouteDispatcher extends Component {
       },
     };
 
-    static dispatch(location, dispatchActions, props) {
-      return dispatchRouteActions(location, { dispatchActions, ...getDispatcherProps(props) });
+    static dispatch(location, actions, props) {
+      return dispatchRouteActions(location, { actions, ...getDispatcherProps(props) });
     }
 
     constructor(props, context) {
@@ -148,7 +145,7 @@ class RouteDispatcher extends Component {
       this.state = {
         previousLocation: null,
         hasDispatchedActions: !props.dispatchActionsOnFirstRender,
-        dispatchActions: standardizeDispatchActions(props.dispatchActions)
+        dispatchActions: standardizeDispatchActions(props.actions)
       };
     }
 
@@ -168,9 +165,9 @@ class RouteDispatcher extends Component {
 
     componentWillReceiveProps(nextProps) {
       const { location } = this.props;
-      const receivedDispatchActions = typeof nextProps.dispatchActions !== 'undefined';
+      const receivedDispatchActions = typeof nextProps.actions !== 'undefined';
       const newState = receivedDispatchActions ?
-          { dispatchActions: standardizeDispatchActions(nextProps.dispatchActions) } :
+          { dispatchActions: standardizeDispatchActions(nextProps.actions) } :
           {};
 
       const hasLocationChanged =
@@ -198,7 +195,7 @@ class RouteDispatcher extends Component {
             loadingIndicator,
             // DO NOT DELETE THESE PROPS - this is the easiest way to access route props
             /* eslint-disable no-unused-vars */
-            dispatchActions,
+            actions,
             routeComponentPropNames,
             dispatchActionsOnFirstRender,
             actionParams,
@@ -230,6 +227,5 @@ class RouteDispatcher extends Component {
 export {
     RouteDispatcher,
     standardizeDispatchActions,
-    DEFAULT_DISPATCH_ACTIONS,
     DEFAULT_COMPONENT_PROP_NAMES
 };

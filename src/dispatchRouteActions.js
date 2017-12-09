@@ -4,7 +4,7 @@ import invariant from 'invariant';
 import { matchRoutes } from 'react-router-config';
 import getDisplayName from 'react-display-name';
 
-export function parseDispatchActions(dispatchActions) {
+export function parseDispatchActions(dispatchActions) { // todo; add opt for client/server - so on client 'server' actions can be removed.
     if (typeof dispatchActions === 'string') {
         return [[dispatchActions]];
     }
@@ -20,7 +20,7 @@ export function parseDispatchActions(dispatchActions) {
                 return actionSet;
             }
 
-            if (typeof actionSet === 'string') {
+            if (typeof actionSet === 'string') { // todo; this needs to change... where are the ACTIONs resolved?
                 return [actionSet];
             }
 
