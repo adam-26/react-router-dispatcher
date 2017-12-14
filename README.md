@@ -13,16 +13,15 @@
 ---
 
 react-router-dispatcher is designed to work with [react-router v4.x](https://github.com/ReactTraining/react-router), it:
-  * invokes static methods of _route components_ before rendering
+  * uses _actions_ to encapsulate behaviors
+  * supports server-side rendering, including resolving async promises before rendering
   * requires using [react-router-config v4.x](https://github.com/ReactTraining/react-router/tree/master/packages/react-router-config) route configuration
-  * supports server-side rendering.
 
 #### Looking for **version 1.x**??
 >[You can find it on the _V1_ branch](https://github.com/adam-26/react-router-dispatcher/tree/v1).
 Version 2 has been simplified and **no longer requires [redux](redux.js.org)**
 
-
-### Install
+## Install
 ```sh
 // npm
 npm install --save react-router-dispatcher
@@ -31,37 +30,89 @@ npm install --save react-router-dispatcher
 yarn add react-router-dispatcher
 ```
 
-### Usage
+## Usage
 
-##### server-side rendering
+#### Universal rendering
 
-If your building a universal application, use the `createRouteDispatchers` factory method to
-create the `<UniversalRouteDispatcher>` component to render routes on **both client and server**.
+If your building a universal application, use the `createRouteDispatchers` factory method.
 
 ```js
+// dispatcher.js
 import { createRouteDispatchers } from 'react-router-dispatcher';
+import { LOAD_METADATA } from 'react-router-metadata-action';
+import { LOAD_DATA } from './loadDataAction';
 
 // === route dispatcher configuration ===
-const routes = [...]; // react-router-config configuration
-const options = {
-  dispatchActions: [['loadData']] // static methods to invoke
-};
+// 1. define react-router-config route configuration
+const routes = [...];
 
-// Use the createRouteDispatchers factory, it returns a component and method for server-side rendering
-const { UniversalRouteDispatcher, dispatchOnServer } = createRouteDispatchers(routes, options);
+// 2. define the ORDER that actions are invoked
+const orderedActionNames = [[LOAD_DATA], [LOAD_METADATA]];
 
-// === server-side render params ===
-const location = request.url; // current request URL
-const actionParams = { apiClient }; // passed to all dispatch action methods
-
-dispatchOnServer(location, actionParams /*, options */).then(() => {
-  // render your application here
-  // Use the <UniversalRouteDispatcher /> component created by the factory method to render your app
-});
-
+// Use the createRouteDispatchers factory,
+// it returns everything required for rendering dispatcher actions
+const {
+  UniversalRouteDispatcher,
+  ClientRouteDispatcher,
+  dispatchClientActions,
+  dispatchServerActions
+} = createRouteDispatchers(routes, orderedActionNames /*, options */);
 ```
 
-##### client rendering
+##### server-side rendering
+```js
+import Html from 'react-html-metadata';
+import { dispatchServerActions, UniversalRouteDispatcher } from './dispatcher';
+import apiClient from './someOtherPackage';
+
+const location = request.url; // current request URL, from expressjs or similar
+const actionParams = { apiClient }; // passed to all dispatch action methods
+
+dispatchServerActions(location, actionParams /*, options */).then(({ metadata, store }) => {
+  const staticRouterCtx = {};
+
+  // Render the response, supports rendering to stream and string
+  const stream = renderToNodeStream(
+    <Html metadata={metadata}>
+      <StaticRouter location={location} context={staticRouterCtx}>
+        <UniversalRouteDispatcher appData={store} />
+      </StaticRouter>
+    </Html>);
+
+  res.write("<!DOCTYPE html>");
+  stream.pipe(res);
+});
+```
+
+##### client-side rendering
+```js
+import { hydrate, render } from 'react-dom';
+import Html from 'react-html-metadata';
+import {
+  dispatchClientActions,
+  UniversalRouteDispatcher,
+  ClientRouteDispatcher
+} from './dispatcher';
+
+const location = window.location.pathname; // current url, from browser window
+const appData = window.__AppData; // data serialized from the server render
+
+// This is synchronous
+// It uses the appData to recreate the metadata on the client
+const { metadata } = dispatchClientActions(location, appData);
+
+// Use hydrate() with server-side rendering,
+// otherwise use render() with <ClientRouteDispatcher />
+hydrate(
+  <Html metadata={metadata}>
+    <BrowserRouter>
+  	  <UniversalRouteDispatcher />
+    </BrowserRouter>
+  </Html>
+);
+```
+
+#### client-only rendering
 
 For the client app, use the exported `<RouteDispatcher>` component to render your application.
 
@@ -72,87 +123,180 @@ const routeCfg = []; // same as server (react-router-config routes)
 
 // render your app
 <Router ...>
-	<RouterDispatcher routes={routeCfg} dispatchActions={[['loadData']]} />
+	<RouterDispatcher routes={routeCfg} actionNames={[['loadData']]} />
 </Router>
 
 ```
 
-**Alternatively**, the `createRouteDispatchers()` factory also returns a `ClientRouteDispatcher`.
-> This can be useful for **conditional** client _render_ **or** _hydrate_
+### Actions
+
+>You **must assign actions to route components** (components that are assigned directly to react-router-config style routes)
+
+#### Define an _action_
+
+Packages that support _react-router-dispatcher_ should export _actions_.
 
 ```js
-import { createRouteDispatchers } from 'react-router-dispatcher';
+// loadDataAction.js - a simple action for loading async data
+import getDisplayName from 'react-display-name';
 
-const { ClientRouteDispatcher } = createRouteDispatchers(routes, options);
-```
+export const LOAD_DATA = 'LOAD_DATA_ACTION';
 
-### Defining actions
-
->You **must define actions on route components** (components that are assigned directly to react-router-config style routes)
-
-An action is simply a **static method** defined on a component. Its _recommended_ that you return a **Promise** from the static action method.
-
-```js
-export default class MyComponent extents React.Component {
-
-  static loadData = (routeProps, actionParams, routerCtx) => {
-    const { location, match } = routeProps;
-    const {params, isExact, path, url} = match; // match from react-router
-    
-    const { route, routeComponentKey } = routerCtx;
-    
-    return Promise.resolve(actionParams.api.loadData(params.id));
+export default function loadDataAction(paramsToProps = () => {}) {
+  return {
+    name: LOAD_DATA,
+    staticMethodName: 'loadData',
+    initServerAction: (params) => ({
+      store: params.store || {}
+    }),
+    mapParamsToProps: (params, routerCtx) => {
+      store: params.store,
+      ...paramsToProps(params, routerCtx)
+    }
   };
-
-  // ...render, etc.
 }
 ```
 
-The same can be achieved using stateless components
+#### Applying actions to components
 
 ```js
-const MyComponent = (props) => {
-	// render here
-};
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import { withActions } from 'react-router-dispatcher';
+import loadDataAction from './loadDataAction';
 
-MyComponent.loadData = (match, actionParams) => {
-	return Promise.resolve(actionParams.api.loadData(match.params.id));
-};
+class ExampleComponent extends Component {
+  static propTypes = {
+    store:     PropTypes.object.isRequired,
+    apiClient: PropTypes.object.isRequired
+  };
+
+  // loadDataAction invokes this method to load data from an api
+  static loadData(routeProps, actionProps, routerCtx) {
+    const { location, match: { params } } = routeProps;
+    const { store, apiClient } = actionProps;
+
+    // async functions must return a Promise
+    return apiClient.loadById(params.id).then((data) => {
+      store.exampleData = data;
+    });
+  }
+
+  render() {
+    const {store: { exampleData }} = this.props;
+    return <div>{exampleData}</div>
+  }
+}
+
+// the mapper must return the 'propTypes' expected by the component
+const mapParamsToProps = ({ apiClient }) => { apiClient };
+export default withActions(loadDataAction(mapParamsToProps))(ExampleComponent);
+
 ```
 
-### Configuration options
+## API
 
-##### `dispatchActions`
-Configure the **static method(s)** defined any any _route component_ to invoke before rendering.
-Accepts:
-  * a string, the default is `loadData` - any component with a `static loadData = (routeProps, actionParams, routerCtx) => {}` will be invoked before rendering
-  * an array, `['loadData', 'parseData']` - all methods will be invoked in parallel before rendering
-  * nested array, `[['loadData'], ['parseData']]` - each inner array will be invoked serially (ie: `loadData` will be invoked on all components, before `parseData` is invoked on all components)
-  * a function, `dispatchActions(location, actionParams)`. Return one of the previously defined types (string, array, nested array).
+### Actions
 
-##### `routeComponentPropNames`
-Configure the **prop** names of _route components_ that are known to be react **components**
-The default value is `component`.
+It's _recommended_ that all actions are defined as factory _functions_ that return new action instances.
+It can be useful to allow actions to accept parameters to customize the actions behavior.
 
-##### `actionParams`
-Any value can be assigned to the params, the value is passed to all **static action methods**, common usages include passing api clients and application state (such as a redux store)
+#### Action Schema
 
-### RouteDispatcher Props
+**name**: `string`
+  * **required**
+  * The action name should also be exported as a `string`, to be used for configuring action order
 
->All configuration options can be assigned as props
+**staticMethod**: `(routeProps, actionProps, routerCtx) => any`
+  * One of `staticMethod` **or** `staticMethodName` is **required**
+  * Action method implementation, can be defined here or using static methods on components actions are assigned to
+  * return a `Promise` for **async** actions
+  * for non-async actions, return data
 
-##### `loadingIndicator`
-If server-side rendering is **not** used, a _loading component_ will be displayed to the user when dispatching actions on initial load. Pass a component to customize the loading UI.
+**staticMethodName**: `string`
+  * One of `staticMethod` **or** `staticMethodName` is **required**
+  * the name of the static method _required_ on any `Component` that the action is applied to
 
-##### `render`
-Allows the render method to be customized, you **must** invoke the react-router `renderRoutes` method within the render method.
+**mapParamsToProps**: `(params, routerCtx) => Object`
+  * **required**
+  * maps `actionParams` to component props
+  * this method **must** map params to the Components configured `propTypes`
+
+**hoc**: `(Component) => node`
+  * Optional
+  * Defines a higher-order component that is applied to _all_ components that have the action assigned
+  * Using higher-order components makes actions very versatile!
+
+**initServerAction**: `(actionParams) => Object`
+  * Optional, but **required** if the action supports being invoked on the server **before rendering**
+  * if your action supports server-side usage but does not need to perform any init, return an **empty** object
+    * `initServerAction: (params) => {}`
+
+**initClientAction**: `(actionParams) => Object`
+  * Optional, but **required** if the action supports being invoked on the client **before rendering**
+  * if your action supports client-side usage but does not need to perform any init, return an **empty** object
+    * `initClientAction: (params) => {}`
+
+### Methods
+
+#### `createRouteDispatchers(routes, orderedActionNames, options)`
+
+**routes**: `Array`
+  * Routes defined using the [react-router-config](https://github.com/ReactTraining/react-router/tree/master/packages/react-router-config) format.
+
+**orderedActionNames**: `string | Array<string> | Array<Array<string>> | (location, actionParams) => string|Array<string>|Array<Array<string>>`
+  * Configures the **order** that actions will be executed
+  * A `string` can be used if only 1 action is used
+  * An array of action names will execute all actions in **parallel**
+  * A nested array enables actions to be executed **serially**
+    * ie: `[['loadData'], ['parseData']]` first `loadData` is invoked on **each component**, then `parseData` is invoked on each component
+  * A function, `dispatchActions(location, actionParams)`. Return one of the previously defined types (string, array, nested array).
+
+**options**: `Object`
+  * routeComponentPropNames: `Array<string>`, route prop name(s) that are known to be react components
+
+#### `withActions(actions)`
+
+A higher-order component function for assigned actions to components
+
+**actions**:
+  * one or more actions to be applied to a react component
+  * separate multiple actions using a comma: `withActions(loadData(), parseData())(Component)`
+
+### Components
+
+#### `<RouteDispatcher>` component
+
+Props:
+
+**routes**: `Array`
+  * Routes defined using the [react-router-config](https://github.com/ReactTraining/react-router/tree/master/packages/react-router-config) format.
+
+**actionNames**: `string | Array<string> | Array<Array<string>> | (location, actionParams) => string|Array<string>|Array<Array<string>>`
+  * Configure the **action(s)** defined any any _route component_ to invoke before rendering.
+  * See [createRouteDispatchers.orderedActionNames for more information](https://github.com/adam-26/react-router-dispatcher#API)
+
+**routeComponentPropNames**: `Array<string>`
+  * The **prop** names of _route components_ that are known to be react **components**
+  * The default value is `component`.
+
+**actionParams**: `any`
+  * Any value can be assigned to the action params, the value is passed to all **action methods**, common usages include passing api clients and application state (such as a redux store)
+
+**loadingIndicator**: `React Component`
+  * A custom component to display on the client when async actions are pending completion
+  * **note**: this is only rendered on the client
+
+**render**: `(routes, routeProps) => node`
+  * A custom render method
+  * you **must** invoke the react-router `renderRoutes` method within the render method
 
 ### Utilities
 
 #### defineRoutes
 
 The `defineRoutes` utility method automatically assigns `keys` to routes that don't have a key manually assigned.
-This key can be accessed from **dispatch actions** to determine the route that is responsible for invoking the action.
+This key can be accessed from **actions** to determine the exact route that is responsible for invoking the action.
 
 ```js
 import { defineRoutes } from 'react-router-dispatcher';

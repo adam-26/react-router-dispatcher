@@ -1,23 +1,15 @@
 /* eslint-disable react/prop-types */
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { Route } from 'react-router';
+import { withRouter, Route } from 'react-router';
 import { renderRoutes } from 'react-router-config';
 import { createPath } from 'history';
-import dispatchRouteActions, { parseDispatchActions } from './dispatchRouteActions';
-
-function getDispatcherProps(props) {
-  const { routes, routeComponentPropNames, actionParams } = props;
-  return { routes, routeComponentPropNames, actionParams };
-}
-
-function standardizeDispatchActions(dispatchActions) {
-    if (typeof dispatchActions === 'function') {
-        return dispatchActions;
-    }
-
-    return parseDispatchActions(dispatchActions);
-}
+import {
+    dispatchClientActions,
+    dispatchServerActions,
+    dispatchComponentActions,
+    standardizeActionNames
+} from './dispatchRouteActions';
 
 function isDispatchActionsEqual(arr1, arr2) {
     // Determine if a function was passed.
@@ -66,7 +58,6 @@ const DefaultLoadingIndicator = () => (
     <div>Loading...</div>
 );
 
-const DEFAULT_DISPATCH_ACTIONS = [['loadData']];
 const DEFAULT_COMPONENT_PROP_NAMES = ['component', 'components'];
 
 class RouteDispatcher extends Component {
@@ -82,17 +73,17 @@ class RouteDispatcher extends Component {
         routes: PropTypes.array.isRequired,
 
         /**
-         * The name(s) of of static action dispatcher functions to invoke on route components.
+         * The nam of the action(s) to invoke on route components.
          *
-         * This can be a string, and array, or an array or arrays. When an array of arrays,
+         * This can be an array of strings, or an array of string arrays. When an array of arrays,
          * each array of actions is dispatched serially.
          */
-        dispatchActions: PropTypes.oneOfType([
+        actionNames: PropTypes.oneOfType([
             PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
             PropTypes.arrayOf(PropTypes.string),
             PropTypes.string,
             PropTypes.func
-        ]),
+        ]).isRequired,
 
         /**
          * The name(s) of props on route components that can contain action dispatchers
@@ -130,7 +121,6 @@ class RouteDispatcher extends Component {
 
     static defaultProps = {
       actionParams: {},
-      dispatchActions: DEFAULT_DISPATCH_ACTIONS,
       routeComponentPropNames: DEFAULT_COMPONENT_PROP_NAMES,
       dispatchActionsOnFirstRender: true,
       loadingIndicator: DefaultLoadingIndicator,
@@ -139,8 +129,21 @@ class RouteDispatcher extends Component {
       },
     };
 
-    static dispatch(location, dispatchActions, props) {
-      return dispatchRouteActions(location, { dispatchActions, ...getDispatcherProps(props) });
+    static dispatchServerActions(location, actionNames, routeCfg, params) {
+        return dispatchServerActions(location, actionNames, routeCfg, params);
+    }
+
+    static dispatchClientActions(location, actionNames, routeCfg, params) {
+        return dispatchClientActions(location, actionNames, routeCfg, params);
+    }
+
+    static componentDispatch(actionNames, props) {
+        const { location, routes, routeComponentPropNames, actionParams } = props;
+        return dispatchComponentActions(
+            location,
+            actionNames,
+            { routes, routeComponentPropNames },
+            Object.assign({}, actionParams));
     }
 
     constructor(props, context) {
@@ -148,42 +151,47 @@ class RouteDispatcher extends Component {
       this.state = {
         previousLocation: null,
         hasDispatchedActions: !props.dispatchActionsOnFirstRender,
-        dispatchActions: standardizeDispatchActions(props.dispatchActions)
+        dispatchActionNames: standardizeActionNames(props.actionNames)
       };
     }
 
     componentWillMount() {
-      const { hasDispatchedActions, dispatchActions } = this.state;
+      const { hasDispatchedActions, dispatchActionNames } = this.state;
       if (hasDispatchedActions) {
         // data is already loaded
         return;
       }
 
-      const { location, ...props } = this.props;
-      RouteDispatcher.dispatch(location, dispatchActions, props).then(() => {
+      RouteDispatcher.componentDispatch(dispatchActionNames, this.props).then(() => {
         // re-render after data has loaded
         this.setState({ hasDispatchedActions: true });
       });
     }
 
     componentWillReceiveProps(nextProps) {
-      const { location } = this.props;
-      const receivedDispatchActions = typeof nextProps.dispatchActions !== 'undefined';
-      const newState = receivedDispatchActions ?
-          { dispatchActions: standardizeDispatchActions(nextProps.dispatchActions) } :
-          {};
+      const { location, actionNames } = this.props;
+      const { location: nextLocation, actionNames: nextActionNames } = nextProps;
 
-      const hasLocationChanged =
-          typeof nextProps.location !== 'undefined' &&
-          createPath(nextProps.location) !== createPath(location);
+      let nextState;
+      if (typeof nextLocation !== 'undefined' && createPath(nextLocation) !== createPath(location)) {
+          nextState = { previousLocation: location };
+      }
 
-      if (hasLocationChanged ||
-          (receivedDispatchActions &&
-          !isDispatchActionsEqual(newState.dispatchActions, this.state.dispatchActions))) {
-        this.setState({ ...newState, previousLocation: location });
+      if (typeof nextActionNames !== 'undefined' && actionNames !== nextActionNames) {
+          const nextDispatchActionNames = standardizeActionNames(nextActionNames);
+          if (!isDispatchActionsEqual(this.state.dispatchActionNames, nextDispatchActionNames)) {
+              nextState = {
+                  dispatchActionNames: nextDispatchActionNames,
+                  previousLocation: location
+              };
+          }
+      }
+
+      if (typeof nextState !== 'undefined') {
+        this.setState(nextState);
 
         // load data while the old screen remains
-        RouteDispatcher.dispatch(location, this.state.dispatchActions, nextProps).then(() => {
+        RouteDispatcher.componentDispatch(nextActionNames, nextProps).then(() => {
           // clear previousLocation so the next screen renders
           this.setState({ previousLocation: null });
         });
@@ -198,7 +206,7 @@ class RouteDispatcher extends Component {
             loadingIndicator,
             // DO NOT DELETE THESE PROPS - this is the easiest way to access route props
             /* eslint-disable no-unused-vars */
-            dispatchActions,
+            actionNames,
             routeComponentPropNames,
             dispatchActionsOnFirstRender,
             actionParams,
@@ -227,9 +235,11 @@ class RouteDispatcher extends Component {
     }
 }
 
+const RouterDispatcher = withRouter(RouteDispatcher);
+
 export {
     RouteDispatcher,
-    standardizeDispatchActions,
-    DEFAULT_DISPATCH_ACTIONS,
     DEFAULT_COMPONENT_PROP_NAMES
 };
+
+export default RouterDispatcher;
