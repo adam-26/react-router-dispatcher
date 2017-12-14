@@ -97,6 +97,17 @@ function flattenActions(actions) {
     }, []);
 }
 
+function createDispatchAction(dispatchFuncName, pathAndQuery, params, options) {
+    invariant(typeof pathAndQuery === 'string', 'pathAnyQuery expects a string');
+
+    const { actionNames, routes, routeComponentPropNames } = options;
+    return RouteDispatcher[dispatchFuncName](
+        parsePath(pathAndQuery),
+        actionNames,
+        { routes, routeComponentPropNames },
+        Object.assign({}, params));
+}
+
 // use a factory method to simplify server usage
 export default function createRouteDispatchers(routeConfig, actionNames, options = {}) {
     invariant(Array.isArray(routeConfig), 'routeConfig expects an array of routes');
@@ -138,16 +149,8 @@ export default function createRouteDispatchers(routeConfig, actionNames, options
          * @param options [Object] options for server dispatching
          * @returns {*} Components for rendering routes
          */
-        dispatchServerActions: (pathAndQuery, params = {}, options = {}) => {
-            invariant(typeof pathAndQuery === 'string', 'pathAnyQuery expects a string');
-
-            const { actionNames, routes, routeComponentPropNames } = { ...dispatchOpts, ...options };
-            return RouteDispatcher.dispatchServerActions(
-                parsePath(pathAndQuery),
-                actionNames,
-                { routes, routeComponentPropNames },
-                Object.assign({}, params));
-        },
+        dispatchServerActions: (pathAndQuery, params = {}, options = {}) =>
+            createDispatchAction('dispatchServerActions', pathAndQuery, params, { ...dispatchOpts, ...options }),
 
         /**
          * Synchronous client dispatcher
@@ -156,16 +159,8 @@ export default function createRouteDispatchers(routeConfig, actionNames, options
          * @param params
          * @param options
          */
-        dispatchClientActions: (pathAndQuery, params = {}, options = {}) => {
-            invariant(typeof pathAndQuery === 'string', 'pathAnyQuery expects a string');
-
-            const { actionNames, routes, routeComponentPropNames } = { ...dispatchOpts, ...options };
-            return RouteDispatcher.dispatchClientActions(
-                parsePath(pathAndQuery),
-                actionNames,
-                { routes, routeComponentPropNames },
-                Object.assign({}, params));
-        },
+        dispatchClientActions: (pathAndQuery, params = {}, options = {}) =>
+            createDispatchAction('dispatchClientActions', pathAndQuery, params, { ...dispatchOpts, ...options }),
 
         ClientRouteDispatcher: RouteDispatcherHoc(
             'ClientRouteDispatcher',
