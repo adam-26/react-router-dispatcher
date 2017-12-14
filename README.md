@@ -7,6 +7,11 @@
 [![Code Climate](https://img.shields.io/codeclimate/github/adam-26/react-router-dispatcher.svg)](https://codeclimate.com/github/adam-26/react-router-dispatcher)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 
+---
+### WARNING
+**This is a work in progress, it should be considered alpha - the API will likely change**
+---
+
 react-router-dispatcher is designed to work with [react-router v4.x](https://github.com/ReactTraining/react-router), it:
   * uses _actions_ to encapsulate behaviors
   * supports server-side rendering, including resolving async promises before rendering
