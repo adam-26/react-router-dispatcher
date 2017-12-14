@@ -27,27 +27,14 @@ function RouteDispatcherHoc(displayNamePrefix, routeConfig, options) {
     return hoistNonReactStatic(routerDispatcher, RouteDispatcher);
 }
 
-function mergeActions(sourceActionSets, { actionNames, actionNameMap }) {
-    sourceActionSets.forEach((sourceActionSet, actionSetIdx) => {
-        actionNames[actionSetIdx] = sourceActionSets[actionSetIdx] || [];
+function mergeActions(flatActions, actionNames) {
+    return flatActions.reduce((actions, actionName) => {
+        if (actions.indexOf(actionName) === -1) {
+            actions.push(actionName);
+        }
 
-        sourceActionSet.forEach((action) => {
-            if (typeof actionNameMap[action] === 'number') {
-                // its already been merged - warn if the actionSetIdx is different
-                if (__DEV__) {
-                    warning(
-                        actionNameMap[action] === actionSetIdx,
-                        `Action '${action}' is used by multiple components with different dependencies, it's recommended 'createRouteDispatchers()' manually configures actions.`
-                    );
-                }
-
-                return;
-            }
-
-            actionNames[actionSetIdx].push(action);
-            actionNameMap[action] = actionSetIdx;
-        });
-    })
+        return actions;
+    }, actionNames);
 }
 
 function getActionNames(actions) {
@@ -64,20 +51,20 @@ function getActionNames(actions) {
     });
 }
 
-function findRouteActions(routes, routeComponentPropNames, target = { actionNames: [], actionNameMap: {} }) {
+function findRouteActions(routes, routeComponentPropNames, actionNames = []) {
     routes.forEach(route => {
         getRouteComponents(route, routeComponentPropNames).forEach(({ routeComponent }) => {
             if (typeof routeComponent.getDispatcherActions === 'function') {
-                mergeActions(getActionNames(routeComponent.getDispatcherActions()), target);
+                mergeActions(getActionNames(routeComponent.getDispatcherActions()), actionNames);
             }
         });
 
         if (Array.isArray(route.routes)) {
-            findRouteActions(route.routes, routeComponentPropNames, target);
+            findRouteActions(route.routes, routeComponentPropNames, actionNames);
         }
     });
 
-    return target.actionNames;
+    return actionNames;
 }
 
 function flattenActions(actions) {
@@ -126,7 +113,7 @@ export default function createRouteDispatchers(routeConfig, actionNames, options
     }
     else {
         if (__DEV__) {
-            const configuredActionNames = flattenActions(dispatchOpts.actionNames).map(action => action.name);
+            const configuredActionNames = flattenActions(dispatchOpts.actionNames);
             const unconfiguredActions = routeActionNames.filter(actionName => configuredActionNames.indexOf(actionName) === -1);
             const unusedActions = configuredActionNames.filter(actionName => routeActionNames.indexOf(actionName) === -1);
             warning(unconfiguredActions.length === 0, `The actions '${unconfiguredActions.join(', ')}' are used by route components, but are not configured for use by the route dispatcher.`);
