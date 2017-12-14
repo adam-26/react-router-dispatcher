@@ -1,7 +1,7 @@
 {
   "name": "react-router-dispatcher",
   "version": "2.0.0-beta.14",
-  "description": "react-router v4 async action dispatcher",
+  "description": "react-router v4 action dispatcher",
   "main": "lib/index.js",
   "module": "src/index.js",
   "engines": {
@@ -64,7 +64,8 @@
     "history": "^4.7.2",
     "hoist-non-react-statics": "^2.3.1",
     "invariant": "^2.2.2",
-    "react-display-name": "^0.2.3"
+    "react-display-name": "^0.2.3",
+    "warning": "^3.0.0"
   },
   "jest": {
     "mapCoverage": true,
