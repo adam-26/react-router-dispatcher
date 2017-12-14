@@ -56,20 +56,6 @@ export default function withActions(...actions) {
     }
 
     return (Component) => {
-        if (__DEV__) {
-            actions.forEach(({ name, staticMethod, staticMethodName }) => {
-                if (typeof staticMethod !== 'function') {
-                    invariant(
-                        typeof Component[staticMethodName] === 'function',
-                        `Component '${getDisplayName(Component)}' is using action '${name}' but missing the required static method '${staticMethodName}'.`);
-                }
-                else {
-                    warning(
-                        typeof Component[staticMethodName] !== 'function',
-                        `Component '${getDisplayName(Component)}' defines the static method '${staticMethodName}' for action '${name}', but it will never be invoked as the action has a static method assigned.`);
-                }
-            });
-        }
 
         // Compose the actions (components)
         const ComposedComponent = actions.reduceRight((child, { hoc }) => {
@@ -81,6 +67,21 @@ export default function withActions(...actions) {
             HOC.WrappedComponent = Component;
             return HOC;
         }, Component);
+
+        if (__DEV__) {
+            actions.forEach(({ name, staticMethod, staticMethodName }) => {
+                if (typeof staticMethod !== 'function') {
+                    invariant(
+                        typeof ComposedComponent[staticMethodName] === 'function',
+                        `Component '${getDisplayName(Component)}' is using action '${name}' but missing the required static method '${staticMethodName}'.`);
+                }
+                else {
+                    warning(
+                        typeof ComposedComponent[staticMethodName] !== 'function',
+                        `Component '${getDisplayName(Component)}' defines the static method '${staticMethodName}' for action '${name}', but it will never be invoked as the action has a static method assigned.`);
+                }
+            });
+        }
 
         const HOC = (props) => (<ComposedComponent {...props} />);
 

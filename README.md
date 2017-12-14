@@ -254,6 +254,7 @@ It can be useful to allow actions to accept parameters to customize the actions 
 
 **options**: `Object`
   * routeComponentPropNames: `Array<string>`, route prop name(s) that are known to be react components
+  * loadingIndicator: `React Component`, a component to display for client-side renders when loading async data
 
 #### `withActions(actions)`
 
