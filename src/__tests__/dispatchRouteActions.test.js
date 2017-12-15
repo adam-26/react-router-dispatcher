@@ -190,10 +190,11 @@ describe('dispatchRouteActions', () => {
             let inputParams = { hello: 'world' };
             const match = {match: '0'};
             const location = { pathname: '/' };
+            const routerCtx = {};
             const reduced = reduceActionSets([[
-                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match],
-                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match],
-                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match]
+                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match, routerCtx, () => false],
+                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match, routerCtx, () => false],
+                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match, routerCtx, () => false]
             ]], location, inputParams);
 
             reduced.then((outputParams) => {
@@ -205,28 +206,29 @@ describe('dispatchRouteActions', () => {
                 expect(mocks[0].mock.calls[0][0]).toEqual({ location, match });
                 expect(mocks[0].mock.calls[0][1]).toEqual(inputParams);
 
-                expect(mockMapFns[0].mock.calls).toHaveLength(1);
+                expect(mockMapFns[0].mock.calls).toHaveLength(2);
                 expect(mockMapFns[0].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[0].mock.calls[1][0]).toEqual(inputParams);
 
                 expect(mockInitFns[0].mock.calls).toHaveLength(1);
                 expect(mockInitFns[0].mock.calls[0][0]).toEqual(inputParams);
 
                 expect(mocks[1].mock.calls).toHaveLength(1);
                 expect(mocks[1].mock.calls[0][0]).toEqual({ location, match });
-                expect(mocks[1].mock.calls[0][1]).toEqual(inputParams);
 
-                expect(mockMapFns[1].mock.calls).toHaveLength(1);
+                expect(mockMapFns[1].mock.calls).toHaveLength(2);
                 expect(mockMapFns[1].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[1].mock.calls[1][0]).toEqual(inputParams);
 
                 expect(mockInitFns[1].mock.calls).toHaveLength(1);
                 expect(mockInitFns[1].mock.calls[0][0]).toEqual(inputParams);
 
                 expect(mocks[2].mock.calls).toHaveLength(1);
                 expect(mocks[2].mock.calls[0][0]).toEqual({ location, match });
-                expect(mocks[2].mock.calls[0][1]).toEqual(inputParams);
 
-                expect(mockMapFns[2].mock.calls).toHaveLength(1);
+                expect(mockMapFns[2].mock.calls).toHaveLength(2);
                 expect(mockMapFns[2].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[2].mock.calls[1][0]).toEqual(inputParams);
 
                 expect(mockInitFns[2].mock.calls).toHaveLength(1);
                 expect(mockInitFns[2].mock.calls[0][0]).toEqual(inputParams);
@@ -262,10 +264,11 @@ describe('dispatchRouteActions', () => {
             let inputParams = { hello: 'world' };
             const match = {match: '0'};
             const location = { pathname: '/' };
+            const routerCtx = {};
             const reduced = reduceActionSets([
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match]],
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match]],
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match]]
+                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match, routerCtx, () => false]],
+                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match, routerCtx, () => false]],
+                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match, routerCtx, () => false]]
             ], location, inputParams);
 
             reduced.then((outputParams) => {
@@ -277,8 +280,9 @@ describe('dispatchRouteActions', () => {
                 expect(mockActionFns[0].mock.calls[0][0]).toEqual({ location, match });
                 expect(mockActionFns[0].mock.calls[0][1]).toEqual(inputParams);
 
-                expect(mockMapFns[0].mock.calls).toHaveLength(1);
+                expect(mockMapFns[0].mock.calls).toHaveLength(2);
                 expect(mockMapFns[0].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[0].mock.calls[1][0]).toEqual(inputParams);
 
                 expect(mockInitFns[0].mock.calls).toHaveLength(1);
                 expect(mockInitFns[0].mock.calls[0][0]).toEqual(inputParams);
@@ -287,8 +291,9 @@ describe('dispatchRouteActions', () => {
                 expect(mockActionFns[1].mock.calls[0][0]).toEqual({ location, match });
                 expect(mockActionFns[1].mock.calls[0][1]).toEqual(inputParams);
 
-                expect(mockMapFns[1].mock.calls).toHaveLength(1);
+                expect(mockMapFns[1].mock.calls).toHaveLength(2);
                 expect(mockMapFns[1].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[1].mock.calls[1][0]).toEqual(inputParams);
 
                 expect(mockInitFns[1].mock.calls).toHaveLength(1);
                 expect(mockInitFns[1].mock.calls[0][0]).toEqual(inputParams);
@@ -297,14 +302,88 @@ describe('dispatchRouteActions', () => {
                 expect(mockActionFns[2].mock.calls[0][0]).toEqual({ location, match });
                 expect(mockActionFns[2].mock.calls[0][1]).toEqual(inputParams);
 
-                expect(mockMapFns[2].mock.calls).toHaveLength(1);
+                expect(mockMapFns[2].mock.calls).toHaveLength(2);
                 expect(mockMapFns[2].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[2].mock.calls[1][0]).toEqual(inputParams);
 
                 expect(mockInitFns[2].mock.calls).toHaveLength(1);
                 expect(mockInitFns[2].mock.calls[0][0]).toEqual(inputParams);
 
                 // verify order
                 expect(order).toEqual([0,1,2]);
+                done();
+            });
+        });
+
+        test('reduceActionSets - serial with endServerAction should prevent action invocations', done => {
+
+            jest.setTimeout(2500);
+
+            const mockActionFns = [
+                jest.fn(() => appendOrder(0)),
+                jest.fn(() => appendOrder(1)),
+                jest.fn(() => appendOrder(2))
+            ];
+
+            const mockMapFns = [
+                jest.fn((params) => params),
+                jest.fn((params) => params),
+                jest.fn((params) => params)
+            ];
+
+            const mockInitFns = [
+                jest.fn((params) => params),
+                jest.fn((params) => params),
+                jest.fn((params) => params)
+            ];
+
+            const mockEndServerActions = jest.fn();
+            let inputParams = { hello: 'world' };
+            const match = {match: '0'};
+            const location = { pathname: '/' };
+            const routerCtx = {};
+            const reduced = reduceActionSets([
+                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match, routerCtx, () => false]],
+                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match, routerCtx, () => true]],
+                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match, routerCtx, mockEndServerActions]]
+            ], location, inputParams);
+
+            reduced.then((outputParams) => {
+                // verify output
+                expect(outputParams).toEqual(inputParams);
+
+                // verify mocks
+                expect(mockActionFns[0].mock.calls).toHaveLength(1);
+                expect(mockActionFns[0].mock.calls[0][0]).toEqual({ location, match });
+                expect(mockActionFns[0].mock.calls[0][1]).toEqual(inputParams);
+
+                expect(mockMapFns[0].mock.calls).toHaveLength(2);
+                expect(mockMapFns[0].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[0].mock.calls[1][0]).toEqual(inputParams);
+
+                expect(mockInitFns[0].mock.calls).toHaveLength(1);
+                expect(mockInitFns[0].mock.calls[0][0]).toEqual(inputParams);
+
+                expect(mockActionFns[1].mock.calls).toHaveLength(1);
+                expect(mockActionFns[1].mock.calls[0][0]).toEqual({ location, match });
+                expect(mockActionFns[1].mock.calls[0][1]).toEqual(inputParams);
+
+                expect(mockMapFns[1].mock.calls).toHaveLength(2);
+                expect(mockMapFns[1].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[1].mock.calls[1][0]).toEqual(inputParams);
+
+                expect(mockInitFns[1].mock.calls).toHaveLength(1);
+                expect(mockInitFns[1].mock.calls[0][0]).toEqual(inputParams);
+
+                // The last actionSet should NOT be invoked
+                expect(mockActionFns[2].mock.calls).toHaveLength(0);
+                expect(mockMapFns[2].mock.calls).toHaveLength(0);
+                expect(mockInitFns[2].mock.calls).toHaveLength(0);
+
+                expect(mockEndServerActions.mock.calls).toHaveLength(0);
+
+                // verify order
+                expect(order).toEqual([0,1]);
                 done();
             });
         });

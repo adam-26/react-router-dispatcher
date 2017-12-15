@@ -25,6 +25,12 @@ npm install --save react-router-dispatcher
 yarn add react-router-dispatcher
 ```
 
+## Available actions
+
+  * [react-router-status-code-action](https://github.com/adam-26/react-router-status-code-action) set HTTP status code of streaming responses
+  * [react-router-redirect-action](https://github.com/adam-26/react-router-redirect-action) redirect routes that support SSR streams by redirecting before render
+  * [react-router-metadata-action](https://github.com/adam-26/react-router-metadata-action) SSR stream supported HTML metadata
+
 ## Usage
 
 #### Universal rendering
@@ -231,6 +237,10 @@ It can be useful to allow actions to accept parameters to customize the actions 
   * Optional, but **required** if the action supports being invoked on the client **before rendering**
   * if your action supports client-side usage but does not need to perform any init, return an **empty** object
     * `initClientAction: (params) => {}`
+
+**endServerActions**: `(props, routerCtx) => boolean`
+  * Optional, allows an action to short-circuit/prevent invocation of following action sets with `dispatchOnServer()`
+    * For example; An action may determine a redirect is required, therefore invoking following action sets is a waste of resources
 
 ### Methods
 
