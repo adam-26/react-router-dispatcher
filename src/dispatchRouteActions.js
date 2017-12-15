@@ -62,10 +62,11 @@ export function resolveActionSets(routeComponents, dispatchActions, initParamFun
 
             const componentActions = component.getDispatcherActions(actionSet, actionFilter);
             componentActions.forEach(action => {
-                const { staticMethod, staticMethodName, mapParamsToProps } = action;
+                const { staticMethod, staticMethodName, mapParamsToProps, endServerActions } = action;
                 const initParams = (typeof initParamFuncName === 'string' && action[initParamFuncName]) || (params => params);
                 const componentAction = staticMethod || component[staticMethodName];
-                promises.push([componentAction, mapParamsToProps, initParams, match, routerContext]);
+                const endActions = typeof endServerActions === 'function' ? endServerActions : false;
+                promises.push([componentAction, mapParamsToProps, initParams, match, routerContext, endActions]);
             });
         });
 
@@ -80,15 +81,25 @@ function createActionSetPromise(actionSet, location, params) {
             mapParamsToProps(Object.assign(params, initParams(params)), routerContext),
             routerContext));
         })
-    );
+    )
+
+    // determine if the next action set should be invoked
+    .then(() => Promise.resolve(
+        // eslint-disable-next-line no-unused-vars
+        !actionSet.some(([ componentAction, mapParamsToProps, initParams, match, routerContext, endServerActions ]) =>
+            endServerActions === false ?
+                false :
+                endServerActions({location, match}, mapParamsToProps(params, routerContext), routerContext))
+    ));
 }
 
 export function reduceActionSets(actionSets, location, params) {
-    let promiseActionSet = createActionSetPromise(actionSets.shift(), location, params);
+    let promiseActionSet = Promise.resolve(true); // always start w/true to invoke the first actionSet
 
     while (actionSets.length > 0) {
         const actionSet = actionSets.shift(); // IMPORTANT: Leave this on its own line, otherwise tests timeout
-        promiseActionSet = promiseActionSet.then(() => createActionSetPromise(actionSet, location, params));
+        promiseActionSet = promiseActionSet.then((invokeActions) =>
+            invokeActions ? createActionSetPromise(actionSet, location, params) : Promise.resolve(invokeActions));
     }
     // TODO... verify PARAMS is "safe" for lifecycle method re-use...
     return promiseActionSet.then(() => Promise.resolve(params));
