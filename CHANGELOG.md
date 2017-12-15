@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.0.0-beta.21"></a>
+# [2.0.0-beta.21](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.20...v2.0.0-beta.21) (2017-12-15)
+
+
+### Features
+
+* **action:** endServerAction ([#42](https://github.com/adam-26/react-router-dispatcher/issues/42)) ([d9c26e9](https://github.com/adam-26/react-router-dispatcher/commit/d9c26e9))
+
+
+
 <a name="2.0.0-beta.20"></a>
 # [2.0.0-beta.20](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.19...v2.0.0-beta.20) (2017-12-14)
 
