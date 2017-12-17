@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.0.0-beta.22"></a>
+# [2.0.0-beta.22](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.21...v2.0.0-beta.22) (2017-12-17)
+
+
+### Bug Fixes
+
+* **build:** add Greenkeeper ([#43](https://github.com/adam-26/react-router-dispatcher/issues/43)) ([c66e397](https://github.com/adam-26/react-router-dispatcher/commit/c66e397))
+
+
+
 <a name="2.0.0-beta.21"></a>
 # [2.0.0-beta.21](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.20...v2.0.0-beta.21) (2017-12-15)
 
