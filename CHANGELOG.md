@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.0.0-beta.27"></a>
+# [2.0.0-beta.27](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.26...v2.0.0-beta.27) (2017-12-18)
+
+
+### Bug Fixes
+
+* **code:** Support for null components ([#49](https://github.com/adam-26/react-router-dispatcher/issues/49)) ([daf2a26](https://github.com/adam-26/react-router-dispatcher/commit/daf2a26))
+
+
+
 <a name="2.0.0-beta.26"></a>
 # [2.0.0-beta.26](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.25...v2.0.0-beta.26) (2017-12-18)
 
