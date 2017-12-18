@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.0.0-beta.23"></a>
+# [2.0.0-beta.23](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.22...v2.0.0-beta.23) (2017-12-18)
+
+
+### Bug Fixes
+
+* **bug:** Nested action components ([#45](https://github.com/adam-26/react-router-dispatcher/issues/45)) ([5c90b7d](https://github.com/adam-26/react-router-dispatcher/commit/5c90b7d))
+
+
+
 <a name="2.0.0-beta.22"></a>
 # [2.0.0-beta.22](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.21...v2.0.0-beta.22) (2017-12-17)
 
