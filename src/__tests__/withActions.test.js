@@ -140,6 +140,18 @@ describe('withActions', () => {
                 actionComponent.getDispatcherActions().map(a => a.name))
                 .toEqual(['action1', 'action2', 'action3']);
         });
+
+        test('applies withActions() to a null component', () => {
+            actionComponent = withActions({
+                name: 'action1',
+                staticMethod: () => {},
+                mapParamsToProps: () => {},
+            })(null);
+
+            expect(
+                actionComponent.getDispatcherActions().map(a => a.name))
+                .toEqual(['action1']);
+        });
     });
 
     test('applies action HOC', () => {
