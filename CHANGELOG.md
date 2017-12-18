@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.0.0-beta.24"></a>
+# [2.0.0-beta.24](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.23...v2.0.0-beta.24) (2017-12-18)
+
+
+### Bug Fixes
+
+* **package:** update babel-jest to version 22.0.0 ([#44](https://github.com/adam-26/react-router-dispatcher/issues/44)) ([750cb38](https://github.com/adam-26/react-router-dispatcher/commit/750cb38))
+
+
+
 <a name="2.0.0-beta.23"></a>
 # [2.0.0-beta.23](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.22...v2.0.0-beta.23) (2017-12-18)
 
