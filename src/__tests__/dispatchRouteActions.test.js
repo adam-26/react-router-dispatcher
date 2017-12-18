@@ -421,7 +421,7 @@ describe('dispatchRouteActions', () => {
                 expect(orderedParams[0][0].match).toBeDefined();
 
                 // verify action params
-                expect(orderedParams[0][1]).toEqual(actionParams);
+                expect(orderedParams[0][1]).toEqual({ ...actionParams, httpResponse: { statusCode: 200 } });
 
                 // verify route params
                 expect(orderedParams[0][2].route).toBeDefined();
@@ -528,7 +528,7 @@ describe('dispatchRouteActions', () => {
             expect(mockInitServerAction.mock.calls).toHaveLength(0);
             expect(mockLoadDataMapToProps.mock.calls).toHaveLength(0);
 
-            expect(props).toEqual({ clientData: { value: 1 } });
+            expect(props).toEqual({ clientData: { value: 1 }, httpResponse: { statusCode: 200 } });
         });
     });
 });

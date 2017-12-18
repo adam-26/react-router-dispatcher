@@ -56,6 +56,7 @@ export default function withActions(...actions) {
     }
 
     return (Component) => {
+        const hocDispatcherActions = actions.slice();
 
         // Compose the actions (components)
         const ComposedComponent = actions.reduceRight((child, { hoc }) => {
@@ -64,9 +65,20 @@ export default function withActions(...actions) {
             }
 
             const HOC = hoistNonReactStatics(hoc(child), child);
-            HOC.WrappedComponent = Component;
+            HOC.WrappedComponent = child;
+            if (typeof child.getDispatcherActions === 'function') {
+                Array.prototype.unshift.apply(hocDispatcherActions, child.getDispatcherActions());
+            }
+
             return HOC;
         }, Component);
+
+        if (actions.length === 1) {
+            // reduceRight() is not invoked when there is only a single action
+            if (typeof Component.getDispatcherActions === 'function') {
+                Array.prototype.unshift.apply(hocDispatcherActions, Component.getDispatcherActions());
+            }
+        }
 
         if (__DEV__) {
             actions.forEach(({ name, staticMethod, staticMethodName }) => {
@@ -83,25 +95,26 @@ export default function withActions(...actions) {
             });
         }
 
-        const HOC = (props) => (<ComposedComponent {...props} />);
+        let HOC = (props) => (<ComposedComponent {...props} />);
 
-        HOC.displayName = `withActions(${getDisplayName(Component)})`;
+        HOC = hoistNonReactStatics(HOC, ComposedComponent);
 
-        HOC.WrappedComponent = Component;
+        HOC.displayName = `withActions(${getDisplayName(ComposedComponent)})`;
+
+        HOC.WrappedComponent = ComposedComponent;
 
         HOC.getDispatcherActions = function getDispatcherActions(
             permittedActionNames: Array<string> = [],
             filter: (action: Object) => boolean = () => true
         ) {
             permittedActionNames = permittedActionNames || [];
-            const dispatcherActions = actions.slice();
-            return dispatcherActions.filter(action => {
+            return hocDispatcherActions.filter(action => {
                 return (permittedActionNames.length === 0 ?
                     true :
                     permittedActionNames.indexOf(action.name) !== -1) && filter(action);
             })
         };
 
-        return hoistNonReactStatics(HOC, ComposedComponent);
+        return HOC;
     };
 }
