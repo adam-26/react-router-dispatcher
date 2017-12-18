@@ -113,6 +113,33 @@ describe('withActions', () => {
                     .map(a => a.name))
                 .toEqual(['action2']);
         });
+
+        test('applies multiple withActions() actions to component', () => {
+            actionComponent = withActions({
+                name: 'action1',
+                staticMethod: () => {},
+                staticMethodName: 'method1',
+                mapParamsToProps: () => {},
+            })(TestComponent);
+            actionComponent = withActions({
+                name: 'action2',
+                staticMethod: () => {},
+                initServerAction: p => p,
+                staticMethodName: 'method2',
+                mapParamsToProps: () => {},
+            })(actionComponent);
+            actionComponent = withActions({
+                name: 'action3',
+                initClientAction: p => p,
+                staticMethod: () => {},
+                staticMethodName: 'method3',
+                mapParamsToProps: () => {},
+            })(actionComponent);
+
+            expect(
+                actionComponent.getDispatcherActions().map(a => a.name))
+                .toEqual(['action1', 'action2', 'action3']);
+        });
     });
 
     test('applies action HOC', () => {

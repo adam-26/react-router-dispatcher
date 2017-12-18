@@ -3,6 +3,12 @@ import React from 'react';
 import invariant from 'invariant';
 import { matchRoutes } from 'react-router-config';
 
+const defaultParams = {
+    httpResponse: {
+        statusCode: 200
+    }
+};
+
 function isRouteComponent(routeComponent) {
     return React.isValidElement(routeComponent) || typeof routeComponent === 'function';
 }
@@ -116,6 +122,7 @@ export function matchRouteComponents(location, routes, routeComponentPropNames) 
 
 export function dispatchRouteActions(location, actions, routeConfig, params, initParamFuncName, actionFilter) {
     const { routes, routeComponentPropNames } = routeConfig;
+    const actionParams = Object.assign({}, defaultParams, params);
 
     // Determine all RouteComponent(s) matched for the current route
     const routeComponents = matchRouteComponents(location, routes, routeComponentPropNames);
@@ -124,7 +131,7 @@ export function dispatchRouteActions(location, actions, routeConfig, params, ini
     }
 
     const dispatchActions = typeof actions === 'function' ?
-        parseDispatchActions(actions(location, params)) :
+        parseDispatchActions(actions(location, actionParams)) :
         actions;
 
     const actionSets = resolveActionSets(
@@ -133,7 +140,7 @@ export function dispatchRouteActions(location, actions, routeConfig, params, ini
         initParamFuncName,
         actionFilter);
 
-    return reduceActionSets(actionSets, location, params);
+    return reduceActionSets(actionSets, location, actionParams);
 }
 
 function parseDispatchActions(dispatchActions) {
@@ -227,7 +234,7 @@ export function dispatchServerActions(location, actionNames, routeConfig, params
 export function dispatchClientActions(location, actionNames, routeConfig, params) {
     const { routes, routeComponentPropNames } = routeConfig;
 
-    const clientParams = Object.assign({}, params);
+    const clientParams = Object.assign({}, defaultParams, params);
     const clientActionSets = standardizeActionNames(actionNames);
     const routeComponents = matchRouteComponents(
         location,
