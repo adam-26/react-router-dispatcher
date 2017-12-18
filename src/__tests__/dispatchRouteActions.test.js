@@ -315,7 +315,7 @@ describe('dispatchRouteActions', () => {
             });
         });
 
-        test('reduceActionSets - serial with endServerAction should prevent action invocations', done => {
+        test('reduceActionSets - serial with stopServerAction should prevent action invocations', done => {
 
             jest.setTimeout(2500);
 
@@ -337,7 +337,7 @@ describe('dispatchRouteActions', () => {
                 jest.fn((params) => params)
             ];
 
-            const mockEndServerActions = jest.fn();
+            const mockStopServerActions = jest.fn();
             let inputParams = { hello: 'world' };
             const match = {match: '0'};
             const location = { pathname: '/' };
@@ -345,7 +345,7 @@ describe('dispatchRouteActions', () => {
             const reduced = reduceActionSets([
                 [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match, routerCtx, () => false]],
                 [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match, routerCtx, () => true]],
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match, routerCtx, mockEndServerActions]]
+                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match, routerCtx, mockStopServerActions]]
             ], location, inputParams);
 
             reduced.then((outputParams) => {
@@ -380,7 +380,7 @@ describe('dispatchRouteActions', () => {
                 expect(mockMapFns[2].mock.calls).toHaveLength(0);
                 expect(mockInitFns[2].mock.calls).toHaveLength(0);
 
-                expect(mockEndServerActions.mock.calls).toHaveLength(0);
+                expect(mockStopServerActions.mock.calls).toHaveLength(0);
 
                 // verify order
                 expect(order).toEqual([0,1]);

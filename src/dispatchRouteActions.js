@@ -68,11 +68,11 @@ export function resolveActionSets(routeComponents, dispatchActions, initParamFun
 
             const componentActions = component.getDispatcherActions(actionSet, actionFilter);
             componentActions.forEach(action => {
-                const { staticMethod, staticMethodName, mapParamsToProps, endServerActions } = action;
+                const { staticMethod, staticMethodName, mapParamsToProps, stopServerActions } = action;
                 const initParams = (typeof initParamFuncName === 'string' && action[initParamFuncName]) || (params => params);
                 const componentAction = staticMethod || component[staticMethodName];
-                const endActions = typeof endServerActions === 'function' ? endServerActions : false;
-                promises.push([componentAction, mapParamsToProps, initParams, match, routerContext, endActions]);
+                const stopActions = typeof stopServerActions === 'function' ? stopServerActions : false;
+                promises.push([componentAction, mapParamsToProps, initParams, match, routerContext, stopActions]);
             });
         });
 
@@ -92,10 +92,10 @@ function createActionSetPromise(actionSet, location, params) {
     // determine if the next action set should be invoked
     .then(() => Promise.resolve(
         // eslint-disable-next-line no-unused-vars
-        !actionSet.some(([ componentAction, mapParamsToProps, initParams, match, routerContext, endServerActions ]) =>
-            endServerActions === false ?
+        !actionSet.some(([ componentAction, mapParamsToProps, initParams, match, routerContext, stopServerActions ]) =>
+            stopServerActions === false ?
                 false :
-                endServerActions({location, match}, mapParamsToProps(params, routerContext), routerContext))
+                stopServerActions({location, match}, mapParamsToProps(params, routerContext), routerContext))
     ));
 }
 
