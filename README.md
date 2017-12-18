@@ -240,7 +240,7 @@ It can be useful to allow actions to accept parameters to customize the actions 
   * if your action supports client-side usage but does not need to perform any init, return an **empty** object
     * `initClientAction: (params) => {}`
 
-**endServerActions**: `(props, routerCtx) => boolean`
+**stopServerActions**: `(routeProps, actionProps, routerCtx) => boolean`
   * Optional, allows an action to short-circuit/prevent invocation of following action sets with `dispatchOnServer()`
     * For example; An action may determine a redirect is required, therefore invoking following action sets is a waste of resources
 
