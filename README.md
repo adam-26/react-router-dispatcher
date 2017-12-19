@@ -1,7 +1,6 @@
 # react-router-dispatcher
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/adam-26/react-router-dispatcher.svg)](https://greenkeeper.io/)
-
 [![npm](https://img.shields.io/npm/v/react-router-dispatcher.svg)](https://www.npmjs.com/package/react-router-dispatcher)
 [![npm](https://img.shields.io/npm/dm/react-router-dispatcher.svg)](https://www.npmjs.com/package/react-router-dispatcher)
 [![CircleCI branch](https://img.shields.io/circleci/project/github/adam-26/react-router-dispatcher/master.svg)](https://circleci.com/gh/adam-26/react-router-dispatcher/tree/master)
