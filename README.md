@@ -29,9 +29,9 @@ yarn add react-router-dispatcher
 
 ## Available actions
 
-  * [react-router-status-code-action](https://github.com/adam-26/react-router-status-code-action) set HTTP status code of streaming responses
-  * [react-router-redirect-action](https://github.com/adam-26/react-router-redirect-action) redirect routes that support SSR streams by redirecting before render
-  * [react-router-metadata-action](https://github.com/adam-26/react-router-metadata-action) SSR stream supported HTML metadata
+  * [react-router-dispatcher-status-code](https://github.com/adam-26/react-router-dispatcher-status-code) set HTTP status code of streaming responses
+  * [react-router-dispatcher-redirect](https://github.com/adam-26/react-router-dispatcher-redirect) redirect routes that support SSR streams by redirecting before render
+  * [react-router-dispatcher-metadata](https://github.com/adam-26/react-router-dispatcher-metadata) SSR stream supported HTML metadata
 
 ## Usage
 
