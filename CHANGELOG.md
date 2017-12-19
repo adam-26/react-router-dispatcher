@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.0.0-beta.28"></a>
+# [2.0.0-beta.28](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.27...v2.0.0-beta.28) (2017-12-19)
+
+
+### Bug Fixes
+
+* **docs:** Update links ([#50](https://github.com/adam-26/react-router-dispatcher/issues/50)) ([0d543bd](https://github.com/adam-26/react-router-dispatcher/commit/0d543bd))
+
+
+
 <a name="2.0.0-beta.27"></a>
 # [2.0.0-beta.27](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.0-beta.26...v2.0.0-beta.27) (2017-12-18)
 
