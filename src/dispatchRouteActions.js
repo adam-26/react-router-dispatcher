@@ -56,7 +56,7 @@ export function resolveRouteComponents(branch, routeComponentPropNames) {
     return routeComponents
 }
 
-export function resolveActionSets(routeComponents, dispatchActions, initParamFuncName, actionFilter) {
+export function resolveActionSets(routeComponents, dispatchActions, initParamFuncName, isLifecycleMethod, actionFilter) {
     const actionSets = parseDispatchActions(dispatchActions);
 
     return actionSets.map(actionSet => {
@@ -69,15 +69,20 @@ export function resolveActionSets(routeComponents, dispatchActions, initParamFun
             const componentActions = component.getDispatcherActions(actionSet, actionFilter);
             componentActions.forEach(action => {
                 const { staticMethod, staticMethodName, mapParamsToProps, stopServerActions } = action;
-                const initParams = (typeof initParamFuncName === 'string' && action[initParamFuncName]) || (params => params);
+                const initParams = isLifecycleMethod ?
+                    props => props :
+                    (typeof initParamFuncName === 'string' && action[initParamFuncName]) || (params => params);
+                const mapperFunc = isLifecycleMethod ?
+                    props => props :
+                    mapParamsToProps;
                 const componentAction = staticMethod || component[staticMethodName];
                 const stopActions = typeof stopServerActions === 'function' ? stopServerActions : false;
-                promises.push([componentAction, mapParamsToProps, initParams, match, routerContext, stopActions]);
+                promises.push([componentAction, mapperFunc, initParams, match, routerContext, stopActions]);
             });
         });
 
         return promises;
-    });
+    }).filter(actionSet => actionSet.length > 0);
 }
 
 function createActionSetPromise(actionSet, location, params) {
@@ -120,7 +125,7 @@ export function matchRouteComponents(location, routes, routeComponentPropNames) 
     return resolveRouteComponents(branch, routeComponentPropNames);
 }
 
-export function dispatchRouteActions(location, actions, routeConfig, params, initParamFuncName, actionFilter) {
+export function dispatchRouteActions(location, actions, routeConfig, params, initParamFuncName, isLifecycleMethod, actionFilter) {
     const { routes, routeComponentPropNames } = routeConfig;
     const actionParams = Object.assign({}, defaultParams, params);
 
@@ -138,6 +143,7 @@ export function dispatchRouteActions(location, actions, routeConfig, params, ini
         routeComponents,
         dispatchActions,
         initParamFuncName,
+        isLifecycleMethod,
         actionFilter);
 
     return reduceActionSets(actionSets, location, actionParams);
@@ -200,7 +206,8 @@ export function dispatchComponentActions(location, actionNames, routeConfig, par
         actionNames,
         routeConfig,
         params,
-        'initComponentAction');
+        'initComponentAction',
+        true);
 }
 
 /**
@@ -219,6 +226,7 @@ export function dispatchServerActions(location, actionNames, routeConfig, params
         routeConfig,
         params,
         'initServerAction',
+        false,
         isServerAction);
 }
 
