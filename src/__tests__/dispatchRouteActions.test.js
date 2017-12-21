@@ -8,7 +8,8 @@ import {
     dispatchClientActions,
     resolveActionSets,
     resolveRouteComponents,
-    reduceActionSets
+    reduceActionSets,
+    dispatchComponentActions
 } from '../dispatchRouteActions';
 
 let order = [];
@@ -472,8 +473,6 @@ describe('dispatchRouteActions', () => {
                 mockParseDataMapToProps
             } = mocks;
 
-            // TODO: Add other test the ensure logic REMOVES any EMPTY actionSet(s) from processing...
-
             const p = dispatchServerActions(
                 { pathname: '/' },
                 [[LOAD_DATA], [PARSE_DATA]],
@@ -488,6 +487,37 @@ describe('dispatchRouteActions', () => {
                 // Verify action mocks
                 expect(mockInitServerAction.mock.calls).toHaveLength(1);
                 expect(mockLoadDataMapToProps.mock.calls).toHaveLength(1);
+                expect(mockInitClientAction.mock.calls).toHaveLength(0);
+                expect(mockParseDataMapToProps.mock.calls).toHaveLength(0);
+
+                done();
+            });
+        });
+
+        test('dispatchComponentActions does not invoke mapper or init functions', done => {
+            const {
+                mockHomeAction,
+                mockRootAction,
+                mockInitServerAction,
+                mockLoadDataMapToProps,
+                mockInitClientAction,
+                mockParseDataMapToProps
+            } = mocks;
+
+            const p = dispatchComponentActions(
+                { pathname: '/' },
+                [[LOAD_DATA], [PARSE_DATA]],
+                { routes, routeComponentPropNames },
+                actionParams);
+
+            p.then(() => {
+                expect(mockRootAction.mock.calls).toHaveLength(1);
+                expect(mockHomeAction.mock.calls).toHaveLength(1);
+                expect(order).toEqual([0, 1]);
+
+                // Verify action mocks
+                expect(mockInitServerAction.mock.calls).toHaveLength(0);
+                expect(mockLoadDataMapToProps.mock.calls).toHaveLength(0);
                 expect(mockInitClientAction.mock.calls).toHaveLength(0);
                 expect(mockParseDataMapToProps.mock.calls).toHaveLength(0);
 
