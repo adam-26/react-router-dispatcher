@@ -198,6 +198,12 @@ class RouteDispatcher extends Component {
       }
     }
 
+    shouldComponentUpdate(nextProps, nextState) {
+      const hasLocationChanged = nextState.previousLocation === null && this.state.previousLocation !== null;
+      const haveActionParamsChanged = this.props.actionParams !== nextProps.actionParams;
+      return hasLocationChanged || haveActionParamsChanged;
+    }
+
     render() {
         const {
             location,
