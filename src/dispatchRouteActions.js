@@ -58,59 +58,103 @@ export function resolveRouteComponents(branch, routeComponentPropNames) {
 
 export function resolveActionSets(routeComponents, dispatchActions, initParamFuncName, isLifecycleMethod, actionFilter) {
     const actionSets = parseDispatchActions(dispatchActions);
+    const resolvedActionSets = [];
 
-    return actionSets.map(actionSet => {
-        const promises = [];
-        routeComponents.forEach(([component, match, routerContext]) => {
-            if (typeof component.getDispatcherActions !== 'function') {
+    actionSets.forEach(actionSet => {
+        actionSet.forEach(actionName => {
+            const promises = [];
+            let action = null;
+
+            routeComponents.forEach(([component, match, routerContext]) => {
+                if (typeof component.getDispatcherActions !== 'function') {
+                    return;
+                }
+
+                const componentActions = component.getDispatcherActions([actionName], actionFilter);
+                if (componentActions.length === 0) {
+                    return;
+                }
+
+                // The dispatcher should invoke each individual action
+                invariant(componentActions.length === 1, '[react-router-dispatcher]: .getDispatcherActions() returned more than 1 component action.');
+
+                const componentAction = componentActions[0];
+                if (action === null) {
+                    action = componentAction;
+                }
+
+                const { staticMethod, staticMethodName } = componentAction;
+                const actionMethod = staticMethod || component[staticMethodName];
+                promises.push([actionMethod, match, routerContext]);
+            });
+
+            if (action === null) {
                 return;
             }
 
-            const componentActions = component.getDispatcherActions(actionSet, actionFilter);
-            componentActions.forEach(action => {
-                const { staticMethod, staticMethodName, mapParamsToProps, stopServerActions } = action;
-                const initParams = isLifecycleMethod ?
+            const { successHandler, errorHandler, stopServerActions, mapParamsToProps } = action;
+            resolvedActionSets.push({
+                routeActions: promises,
+                actionSuccessHandler: typeof successHandler === 'function' ? successHandler : () => null,
+                actionErrorHandler: typeof errorHandler === 'function' ? errorHandler : err => { throw err },
+                stopServerActions: typeof stopServerActions === 'function' ? stopServerActions : false, // here or bundled with route actions?
+                initParams: isLifecycleMethod ?
                     props => props :
-                    (typeof initParamFuncName === 'string' && action[initParamFuncName]) || (params => params);
-                const mapperFunc = isLifecycleMethod ?
+                    (typeof initParamFuncName === 'string' && action[initParamFuncName]) || (params => params),
+                mapToProps: isLifecycleMethod ?
                     props => props :
-                    mapParamsToProps;
-                const componentAction = staticMethod || component[staticMethodName];
-                const stopActions = typeof stopServerActions === 'function' ? stopServerActions : false;
-                promises.push([componentAction, mapperFunc, initParams, match, routerContext, stopActions]);
+                    mapParamsToProps
             });
-        });
 
-        return promises;
-    }).filter(actionSet => actionSet.length > 0);
+        });
+    });
+
+    return resolvedActionSets;
 }
 
-function createActionSetPromise(actionSet, location, params) {
-    return Promise.all(actionSet.map(([componentAction, mapParamsToProps, initParams, match, routerContext]) => {
+function createActionSetPromise(resolvedActionSet, location, params) {
+    const {
+        routeActions,
+        actionSuccessHandler,
+        actionErrorHandler,
+        stopServerActions,
+        initParams,
+        mapToProps
+    } = resolvedActionSet;
+
+    // Invoke each route action
+    return Promise.all(routeActions.map(([componentAction, match, routerContext]) => {
         return Promise.resolve(componentAction(
             {location, match},
-            mapParamsToProps(Object.assign(params, initParams(params)), routerContext),
+            mapToProps(Object.assign(params, initParams(params)), routerContext),
             routerContext));
         })
     )
 
+    // Invoke any configured post-action handlers
+    .then(() => Promise.resolve(actionSuccessHandler({location}, params)))
+
+    // Handle any action-specific error(s)
+    .catch(err => actionErrorHandler({location}, err))
+
     // determine if the next action set should be invoked
     .then(() => Promise.resolve(
         // eslint-disable-next-line no-unused-vars
-        !actionSet.some(([ componentAction, mapParamsToProps, initParams, match, routerContext, stopServerActions ]) =>
+        !routeActions.some(([ componentAction, match, routerContext ]) =>
             stopServerActions === false ?
                 false :
-                stopServerActions({location, match}, mapParamsToProps(params, routerContext), routerContext))
+                stopServerActions({location, match}, mapToProps(params, routerContext), routerContext))
     ));
 }
 
-export function reduceActionSets(actionSets, location, params) {
+export function reduceActionSets(resolvedActionSets, location, params) {
     let promiseActionSet = Promise.resolve(true); // always start w/true to invoke the first actionSet
 
-    while (actionSets.length > 0) {
-        const actionSet = actionSets.shift(); // IMPORTANT: Leave this on its own line, otherwise tests timeout
-        promiseActionSet = promiseActionSet.then((invokeActions) =>
-            invokeActions ? createActionSetPromise(actionSet, location, params) : Promise.resolve(invokeActions));
+    while (resolvedActionSets.length > 0) {
+        const resolvedActionSet = resolvedActionSets.shift(); // IMPORTANT: Leave this on its own line, otherwise tests timeout
+        promiseActionSet = promiseActionSet
+            .then((invokeActions) =>
+                invokeActions ? createActionSetPromise(resolvedActionSet, location, params) : Promise.resolve(invokeActions));
     }
     // TODO... verify PARAMS is "safe" for lifecycle method re-use...
     return promiseActionSet.then(() => Promise.resolve(params));

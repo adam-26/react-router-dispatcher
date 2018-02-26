@@ -135,14 +135,15 @@ describe('dispatchRouteActions', () => {
 
             const actionSets = resolveActionSets(routeComponents, actions);
 
-            expect(actionSets).toHaveLength(1);
-            expect(actionSets[0]).toHaveLength(2);
+            expect(actionSets).toHaveLength(2);
+            expect(actionSets[0].routeActions).toHaveLength(1);
+            expect(actionSets[1].routeActions).toHaveLength(1);
 
-            expect(actionSets[0][0][0]).toEqual(Root.primary);
-            expect(actionSets[0][0][3]).toEqual(match0);
+            expect(actionSets[0].routeActions[0][0]).toEqual(Root.primary);
+            expect(actionSets[0].routeActions[0][1]).toEqual(match0);
 
-            expect(actionSets[0][1][0]).toEqual(Home.secondary);
-            expect(actionSets[0][1][3]).toEqual(match1);
+            expect(actionSets[1].routeActions[0][0]).toEqual(Home.secondary);
+            expect(actionSets[1].routeActions[0][1]).toEqual(match1);
         });
 
         test('resolveActionSets - serial', () => {
@@ -157,13 +158,13 @@ describe('dispatchRouteActions', () => {
             const actionSets = resolveActionSets(routeComponents, [[LOAD_DATA], [PARSE_DATA]]);
             expect(actionSets).toHaveLength(2);
 
-            expect(actionSets[0]).toHaveLength(1);
-            expect(actionSets[0][0][0]).toEqual(Root.primary);
-            expect(actionSets[0][0][3]).toEqual(match0);
+            expect(actionSets[0].routeActions).toHaveLength(1);
+            expect(actionSets[0].routeActions[0][0]).toEqual(Root.primary);
+            expect(actionSets[0].routeActions[0][1]).toEqual(match0);
 
-            expect(actionSets[1]).toHaveLength(1);
-            expect(actionSets[1][0][0]).toEqual(Home.secondary);
-            expect(actionSets[1][0][3]).toEqual(match1);
+            expect(actionSets[1].routeActions).toHaveLength(1);
+            expect(actionSets[1].routeActions[0][0]).toEqual(Home.secondary);
+            expect(actionSets[1].routeActions[0][1]).toEqual(match1);
         });
 
         test('reduceActionSets - parallel', done => {
@@ -176,27 +177,25 @@ describe('dispatchRouteActions', () => {
                 jest.fn(() => appendOrder(2))
             ];
 
-            const mockMapFns = [
-                jest.fn((params) => params),
-                jest.fn((params) => params),
-                jest.fn((params) => params)
-            ];
-
-            const mockInitFns = [
-                jest.fn((params) => params),
-                jest.fn((params) => params),
-                jest.fn((params) => params)
-            ];
+            const mockMapFn = jest.fn((params) => params);
+            const mockInitFn = jest.fn((params) => params);
 
             let inputParams = { hello: 'world' };
             const match = {match: '0'};
             const location = { pathname: '/' };
             const routerCtx = {};
-            const reduced = reduceActionSets([[
-                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match, routerCtx, () => false],
-                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match, routerCtx, () => false],
-                [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match, routerCtx, () => false]
-            ]], location, inputParams);
+            const reduced = reduceActionSets([{
+                initParams: mockInitFn,
+                mapToProps: mockMapFn,
+                actionErrorHandler: e => { throw e; },
+                actionSuccessHandler: () => null,
+                stopServerActions: () => false,
+                routeActions: [
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[0](m, h); resolve(); }, 300) }), match, routerCtx],
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[1](m, h); resolve(); }, 200) }), match, routerCtx],
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[2](m, h); resolve(); }, 100) }), match, routerCtx]
+                ]
+            }], location, inputParams);
 
             reduced.then((outputParams) => {
                 // verify output
@@ -207,32 +206,17 @@ describe('dispatchRouteActions', () => {
                 expect(mocks[0].mock.calls[0][0]).toEqual({ location, match });
                 expect(mocks[0].mock.calls[0][1]).toEqual(inputParams);
 
-                expect(mockMapFns[0].mock.calls).toHaveLength(2);
-                expect(mockMapFns[0].mock.calls[0][0]).toEqual(inputParams);
-                expect(mockMapFns[0].mock.calls[1][0]).toEqual(inputParams);
+                expect(mockMapFn.mock.calls).toHaveLength(6);
+                expect(mockMapFn.mock.calls[0][0]).toEqual(inputParams);
 
-                expect(mockInitFns[0].mock.calls).toHaveLength(1);
-                expect(mockInitFns[0].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockInitFn.mock.calls).toHaveLength(3);
+                expect(mockInitFn.mock.calls[0][0]).toEqual(inputParams);
 
                 expect(mocks[1].mock.calls).toHaveLength(1);
                 expect(mocks[1].mock.calls[0][0]).toEqual({ location, match });
 
-                expect(mockMapFns[1].mock.calls).toHaveLength(2);
-                expect(mockMapFns[1].mock.calls[0][0]).toEqual(inputParams);
-                expect(mockMapFns[1].mock.calls[1][0]).toEqual(inputParams);
-
-                expect(mockInitFns[1].mock.calls).toHaveLength(1);
-                expect(mockInitFns[1].mock.calls[0][0]).toEqual(inputParams);
-
                 expect(mocks[2].mock.calls).toHaveLength(1);
                 expect(mocks[2].mock.calls[0][0]).toEqual({ location, match });
-
-                expect(mockMapFns[2].mock.calls).toHaveLength(2);
-                expect(mockMapFns[2].mock.calls[0][0]).toEqual(inputParams);
-                expect(mockMapFns[2].mock.calls[1][0]).toEqual(inputParams);
-
-                expect(mockInitFns[2].mock.calls).toHaveLength(1);
-                expect(mockInitFns[2].mock.calls[0][0]).toEqual(inputParams);
 
                 // verify order
                 expect(order).toEqual([2,1,0]);
@@ -266,11 +250,34 @@ describe('dispatchRouteActions', () => {
             const match = {match: '0'};
             const location = { pathname: '/' };
             const routerCtx = {};
-            const reduced = reduceActionSets([
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match, routerCtx, () => false]],
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match, routerCtx, () => false]],
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match, routerCtx, () => false]]
-            ], location, inputParams);
+            const reduced = reduceActionSets([{
+                initParams: mockInitFns[0],
+                mapToProps: mockMapFns[0],
+                actionErrorHandler: e => { throw e; },
+                actionSuccessHandler: () => null,
+                stopServerActions: () => false,
+                routeActions: [
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), match, routerCtx]
+                ]
+            }, {
+                initParams: mockInitFns[1],
+                mapToProps: mockMapFns[1],
+                actionErrorHandler: e => { throw e; },
+                actionSuccessHandler: () => null,
+                stopServerActions: () => false,
+                routeActions: [
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), match, routerCtx]
+                ]
+            }, {
+                initParams: mockInitFns[2],
+                mapToProps: mockMapFns[2],
+                actionErrorHandler: e => { throw e; },
+                actionSuccessHandler: () => null,
+                stopServerActions: () => false,
+                routeActions: [
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), match, routerCtx]
+                ]
+            }], location, inputParams);
 
             reduced.then((outputParams) => {
                 // verify output
@@ -343,11 +350,34 @@ describe('dispatchRouteActions', () => {
             const match = {match: '0'};
             const location = { pathname: '/' };
             const routerCtx = {};
-            const reduced = reduceActionSets([
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), mockMapFns[0], mockInitFns[0], match, routerCtx, () => false]],
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), mockMapFns[1], mockInitFns[1], match, routerCtx, () => true]],
-                [[(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), mockMapFns[2], mockInitFns[2], match, routerCtx, mockStopServerActions]]
-            ], location, inputParams);
+            const reduced = reduceActionSets([{
+                initParams: mockInitFns[0],
+                mapToProps: mockMapFns[0],
+                actionErrorHandler: e => { throw e; },
+                actionSuccessHandler: () => null,
+                stopServerActions: () => false,
+                routeActions: [
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), match, routerCtx]
+                ]
+            }, {
+                initParams: mockInitFns[1],
+                mapToProps: mockMapFns[1],
+                actionErrorHandler: e => { throw e; },
+                actionSuccessHandler: () => null,
+                stopServerActions: () => true,
+                routeActions: [
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), match, routerCtx]
+                ]
+            }, {
+                initParams: mockInitFns[2],
+                mapToProps: mockMapFns[2],
+                actionErrorHandler: e => { throw e; },
+                actionSuccessHandler: () => null,
+                stopServerActions: mockStopServerActions,
+                routeActions: [
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), match, routerCtx]
+                ]
+            }], location, inputParams);
 
             reduced.then((outputParams) => {
                 // verify output
