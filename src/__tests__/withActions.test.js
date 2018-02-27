@@ -28,9 +28,18 @@ describe('withActions', () => {
         expect(() => withActions({ name: 'n' })).toThrow(/staticMethodName/);
         expect(() => withActions({ name: 'n', staticMethodName: 1 })).toThrow(/staticMethodName/);
 
-        expect(() => withActions({ name: 'n', staticMethodName: 's' })).toThrow(/mapParamsToProps/);
-        expect(() =>
-            withActions({ name: 'n', staticMethodName: 's', mapParamsToProps: 1 })).toThrow(/mapParamsToProps/);
+        expect(() => withActions({
+            name: 'n',
+            staticMethodName: 's',
+            requireMapParamsToProps: true
+        })).toThrow(/mapParamsToProps/);
+
+        expect(() => withActions({
+            name: 'n',
+            staticMethodName: 's',
+            mapParamsToProps: 1,
+            requireMapParamsToProps: true
+        })).toThrow(/mapParamsToProps/);
 
         expect(() => withActions({
             name: 'n',
