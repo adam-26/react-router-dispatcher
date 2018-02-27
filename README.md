@@ -244,7 +244,7 @@ It can be useful to allow actions to accept parameters to customize the actions 
   * Params will include any value(s) assigned from the static action methods
   * NOTE: `params` are the _raw_ dispatcher parameters
 
-**errorHandler**: `({location}, err) => void`
+**errorHandler**: `(err, {location}, params) => void`
   * Optional, invoked if any static action methods or success handler fails
 
 **stopServerActions**: `(routeProps, actionProps, routerCtx) => boolean`
