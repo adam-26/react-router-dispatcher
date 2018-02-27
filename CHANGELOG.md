@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.7.0"></a>
+# [2.7.0](https://github.com/adam-26/react-router-dispatcher/compare/v2.6.0...v2.7.0) (2018-02-27)
+
+
+### Features
+
+* **api:** Allow mapParamsToProps to be optional ([#57](https://github.com/adam-26/react-router-dispatcher/issues/57)) ([91695e5](https://github.com/adam-26/react-router-dispatcher/commit/91695e5))
+
+
+
 <a name="2.6.0"></a>
 # [2.6.0](https://github.com/adam-26/react-router-dispatcher/compare/v2.0.3...v2.6.0) (2018-02-26)
 
