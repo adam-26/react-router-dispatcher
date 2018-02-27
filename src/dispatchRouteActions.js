@@ -98,8 +98,7 @@ export function resolveActionSets(routeComponents, dispatchActions, initParamFun
                 actionSuccessHandler: typeof successHandler === 'function' ? successHandler : () => null,
                 actionErrorHandler: typeof errorHandler === 'function' ? errorHandler : err => { throw err },
                 stopServerActions: typeof stopServerActions === 'function' ? stopServerActions : false, // here or bundled with route actions?
-                initParams: isLifecycleMethod ?
-                    props => props :
+                initParams:
                     (typeof initParamFuncName === 'string' && action[initParamFuncName]) || (params => params),
                 mapToProps: isLifecycleMethod ?
                     props => props :
@@ -135,7 +134,7 @@ function createActionSetPromise(resolvedActionSet, location, params) {
     .then(() => Promise.resolve(actionSuccessHandler({location}, params)))
 
     // Handle any action-specific error(s)
-    .catch(err => actionErrorHandler({location}, err))
+    .catch(err => actionErrorHandler(err, {location}, params))
 
     // determine if the next action set should be invoked
     .then(() => Promise.resolve(
@@ -151,7 +150,7 @@ export function reduceActionSets(resolvedActionSets, location, params) {
     let promiseActionSet = Promise.resolve(true); // always start w/true to invoke the first actionSet
 
     while (resolvedActionSets.length > 0) {
-        const resolvedActionSet = resolvedActionSets.shift(); // IMPORTANT: Leave this on its own line, otherwise tests timeout
+        const resolvedActionSet = resolvedActionSets.shift(); // IMPORTANT: don't refactor this inside the promise fn
         promiseActionSet = promiseActionSet
             .then((invokeActions) =>
                 invokeActions ? createActionSetPromise(resolvedActionSet, location, params) : Promise.resolve(invokeActions));
@@ -193,14 +192,15 @@ export function dispatchRouteActions(location, actions, routeConfig, params, ini
     return reduceActionSets(actionSets, location, actionParams);
 }
 
-function parseDispatchActions(dispatchActions) {
+export function parseDispatchActions(dispatchActions) {
     if (typeof dispatchActions === 'string') {
         return [[dispatchActions]];
     }
 
     if (Array.isArray(dispatchActions)) {
-        if ((!Array.isArray(dispatchActions[0]))) {
-            // if its a flat array, wrap actions to be an action set
+
+        // Is a single action set defined?
+        if (dispatchActions.every(action => typeof action === 'string')) {
             return [dispatchActions];
         }
 
@@ -209,7 +209,7 @@ function parseDispatchActions(dispatchActions) {
                 return actionSet;
             }
 
-            if (typeof dispatchActions === 'string') {
+            if (typeof actionSet === 'string') {
                 return [actionSet];
             }
 

@@ -10,7 +10,17 @@ const __DEV__ = process.env.NODE_ENV !== 'production';
 export default function withActions(...actions) {
     if (__DEV__) {
         actions.forEach(
-            ({ name, staticMethod, staticMethodName, mapParamsToProps, initServerAction, initClientAction, hoc }) => {
+            ({
+                 name,
+                 staticMethod,
+                 staticMethodName,
+                 mapParamsToProps,
+                 initServerAction,
+                 initClientAction,
+                 hoc,
+                 requireMapParamsToProps
+            }) => {
+
             invariant(typeof name !== 'undefined', `Action requires a 'name' property.`);
             invariant(typeof name === 'string', `Action expects 'name' to be a string.`);
 
@@ -28,12 +38,14 @@ export default function withActions(...actions) {
                     `Action '${name}' expects 'staticMethodName' to be a string.`);
             }
 
-            invariant(
-                typeof mapParamsToProps !== 'undefined',
-                `Action '${name}' requires a 'mapParamsToProps' property.`);
-            invariant(
-                typeof mapParamsToProps === 'function',
-                `Action '${name}' expects 'mapParamsToProps' to be a function.`);
+            if (requireMapParamsToProps === true) {
+                invariant(
+                    typeof mapParamsToProps !== 'undefined',
+                    `Action '${name}' requires a 'mapParamsToProps' property.`);
+                invariant(
+                    typeof mapParamsToProps === 'function',
+                    `Action '${name}' expects 'mapParamsToProps' to be a function.`);
+            }
 
             if (typeof initServerAction !== 'undefined') {
                 invariant(

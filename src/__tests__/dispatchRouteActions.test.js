@@ -9,7 +9,8 @@ import {
     resolveActionSets,
     resolveRouteComponents,
     reduceActionSets,
-    dispatchComponentActions
+    dispatchComponentActions,
+    parseDispatchActions
 } from '../dispatchRouteActions';
 
 let order = [];
@@ -589,6 +590,76 @@ describe('dispatchRouteActions', () => {
             expect(mockLoadDataMapToProps.mock.calls).toHaveLength(0);
 
             expect(props).toEqual({ clientData: { value: 1 }, httpResponse: { statusCode: 200 } });
+        });
+    });
+
+    describe('parseDispatchActions', () => {
+        test('convert single action to action set', () => {
+            expect(parseDispatchActions('redir')).toEqual([['redir']]);
+        });
+
+        test('convert single action array to action set', () => {
+            expect(parseDispatchActions(['redir'])).toEqual([['redir']]);
+        });
+
+        test('convert multiple action array to action set', () => {
+            expect(parseDispatchActions(['redir', 'status'])).toEqual([['redir', 'status']]);
+        });
+
+        test('returns single action set as action set', () => {
+            expect(parseDispatchActions([['redir']])).toEqual([['redir']]);
+        });
+
+        test('returns action set', () => {
+            expect(parseDispatchActions([['redir', 'status']])).toEqual([['redir', 'status']]);
+        });
+
+        test('converts combination of actions to action sets (1a)', () => {
+            expect(parseDispatchActions([
+                'first',
+                ['second'],
+                ['third', 'fourth']
+            ])).toEqual([
+                ['first'],
+                ['second'],
+                ['third', 'fourth']
+            ]);
+        });
+
+        test('converts combination of actions to action sets (2a)', () => {
+            expect(parseDispatchActions([
+                ['first', 'second'],
+                'third',
+                ['fourth']
+            ])).toEqual([
+                ['first', 'second'],
+                ['third'],
+                ['fourth']
+            ]);
+        });
+
+        test('converts combination of actions to action sets (3a)', () => {
+            expect(parseDispatchActions([
+                ['first', 'second'],
+                ['third'],
+                'fourth'
+            ])).toEqual([
+                ['first', 'second'],
+                ['third'],
+                ['fourth']
+            ]);
+        });
+
+        test('converts combination of actions to action sets (4a)', () => {
+            expect(parseDispatchActions([
+                ['first'],
+                ['second', 'third'],
+                'fourth'
+            ])).toEqual([
+                ['first'],
+                ['second', 'third'],
+                ['fourth']
+            ]);
         });
     });
 });

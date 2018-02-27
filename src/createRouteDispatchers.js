@@ -107,18 +107,17 @@ export default function createRouteDispatchers(routeConfig, actionNames, options
     const { routes, ...componentOptions } = dispatchOpts;
 
     // If no actions are configured, determine actions from component configuration
-    const routeActionNames = findRouteActions(routes, dispatchOpts.routeComponentPropNames);
     if (typeof dispatchOpts.actionNames === 'undefined' || dispatchOpts.actionNames === null) {
-        dispatchOpts.actionNames = routeActionNames;
+        dispatchOpts.actionNames = findRouteActions(routes, dispatchOpts.routeComponentPropNames);
     }
-    else {
-        if (__DEV__) {
-            const configuredActionNames = flattenActions(dispatchOpts.actionNames);
-            const unconfiguredActions = routeActionNames.filter(actionName => configuredActionNames.indexOf(actionName) === -1);
-            const unusedActions = configuredActionNames.filter(actionName => routeActionNames.indexOf(actionName) === -1);
-            warning(unconfiguredActions.length === 0, `The actions '${unconfiguredActions.join(', ')}' are used by route components, but are not configured for use by the route dispatcher.`);
-            warning(unusedActions.length === 0, `The actions '${unusedActions.join(', ')}' are configured for use with the route dispatcher, but no route components have the action(s) applied.`);
-        }
+    else if (__DEV__) {
+        const configuredActionNames = flattenActions(dispatchOpts.actionNames);
+        const routeActionNames = findRouteActions(routes, dispatchOpts.routeComponentPropNames);
+
+        const unconfiguredActions = routeActionNames.filter(actionName => configuredActionNames.indexOf(actionName) === -1);
+        const unusedActions = configuredActionNames.filter(actionName => routeActionNames.indexOf(actionName) === -1);
+        warning(unconfiguredActions.length === 0, `The actions '${unconfiguredActions.join(', ')}' are used by route components, but are not configured for use by the route dispatcher.`);
+        warning(unusedActions.length === 0, `The actions '${unusedActions.join(', ')}' are configured for use with the route dispatcher, but no route components have the action(s) applied.`);
     }
 
     return {
