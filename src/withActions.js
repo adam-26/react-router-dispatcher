@@ -12,7 +12,11 @@ export default function withActions(mapParamsToProps, ...actions) {
         invariant(typeof mapParamsToProps === 'function', '"mapParamsToProps" must be either a function, or null.');
     }
 
-    invariant(actions.length === 0, '"withActions(null, [action])" requires a minimum of 1 action, pass null as the first parameter if no "mapParamsToProps" function is required.');
+    if (typeof actions !== 'undefined' && actions !== null) {
+        actions = Array.isArray(actions) ? actions : [actions];
+    }
+
+    invariant(actions.length !== 0, '"withActions(null, [action])" requires a minimum of 1 action, pass null as the first parameter if no "mapParamsToProps" function is required.');
 
     const paramsToProps = mapParamsToProps || (params => params);
 
