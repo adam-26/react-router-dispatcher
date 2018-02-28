@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="6.0.0"></a>
+# [6.0.0](https://github.com/adam-26/react-router-dispatcher/compare/v2.7.1...v6.0.0) (2018-02-28)
+
+
+* fix-mappingApi (#59) ([99276e3](https://github.com/adam-26/react-router-dispatcher/commit/99276e3))
+
+
+### Bug Fixes
+
+* **build:** tag conflict ([#60](https://github.com/adam-26/react-router-dispatcher/issues/60)) ([74ad319](https://github.com/adam-26/react-router-dispatcher/commit/74ad319))
+
+
+### BREAKING CHANGES
+
+* Modify API to better support component specific mapping functions. Merge all props to single arg so the API is more similar react.
+
+
+
 <a name="2.7.1"></a>
 ## [2.7.1](https://github.com/adam-26/react-router-dispatcher/compare/v2.7.0...v2.7.1) (2018-02-27)
 
