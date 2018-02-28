@@ -7,18 +7,29 @@ import warning from 'warning';
 
 const __DEV__ = process.env.NODE_ENV !== 'production';
 
-export default function withActions(...actions) {
+export default function withActions(mapParamsToProps, ...actions) {
+    if (!(typeof mapParamsToProps === 'undefined' || mapParamsToProps === null)) {
+        invariant(typeof mapParamsToProps === 'function', '"mapParamsToProps" must be either a function, or null.');
+    }
+
+    if (typeof actions !== 'undefined' && actions !== null) {
+        actions = Array.isArray(actions) ? actions : [actions];
+    }
+
+    invariant(actions.length !== 0, '"withActions(null, [action])" requires a minimum of 1 action, pass null as the first parameter if no "mapParamsToProps" function is required.');
+
+    const paramsToProps = mapParamsToProps || (params => params);
+
     if (__DEV__) {
         actions.forEach(
             ({
                  name,
                  staticMethod,
                  staticMethodName,
-                 mapParamsToProps,
+                 filterParamsToProps,
                  initServerAction,
                  initClientAction,
-                 hoc,
-                 requireMapParamsToProps
+                 hoc
             }) => {
 
             invariant(typeof name !== 'undefined', `Action requires a 'name' property.`);
@@ -38,14 +49,12 @@ export default function withActions(...actions) {
                     `Action '${name}' expects 'staticMethodName' to be a string.`);
             }
 
-            if (requireMapParamsToProps === true) {
-                invariant(
-                    typeof mapParamsToProps !== 'undefined',
-                    `Action '${name}' requires a 'mapParamsToProps' property.`);
-                invariant(
-                    typeof mapParamsToProps === 'function',
-                    `Action '${name}' expects 'mapParamsToProps' to be a function.`);
-            }
+            invariant(
+                typeof filterParamsToProps !== 'undefined',
+                `Action '${name}' requires a 'filterParamsToProps' property.`);
+            invariant(
+                typeof filterParamsToProps === 'function',
+                `Action '${name}' expects 'filterParamsToProps' to be a function.`);
 
             if (typeof initServerAction !== 'undefined') {
                 invariant(
@@ -130,6 +139,10 @@ export default function withActions(...actions) {
                     true :
                     permittedActionNames.indexOf(action.name) !== -1) && filter(action);
             })
+        };
+
+        HOC.getDispatchParamToProps = function getDispatchParamToProps() {
+            return paramsToProps;
         };
 
         return HOC;

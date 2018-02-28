@@ -4,18 +4,18 @@
 [![npm](https://img.shields.io/npm/v/react-router-dispatcher.svg)](https://www.npmjs.com/package/react-router-dispatcher)
 [![npm](https://img.shields.io/npm/dm/react-router-dispatcher.svg)](https://www.npmjs.com/package/react-router-dispatcher)
 [![CircleCI branch](https://img.shields.io/circleci/project/github/adam-26/react-router-dispatcher/master.svg)](https://circleci.com/gh/adam-26/react-router-dispatcher/tree/master)
-[![Code Climate](https://img.shields.io/codeclimate/coverage/github/adam-26/react-router-dispatcher.svg)](https://codeclimate.com/github/adam-26/react-router-dispatcher)
-[![Code Climate](https://img.shields.io/codeclimate/github/adam-26/react-router-dispatcher.svg)](https://codeclimate.com/github/adam-26/react-router-dispatcher)
+[![Maintainability](https://api.codeclimate.com/v1/badges/5ca5fb8baef7a77d54bf/maintainability)](https://codeclimate.com/github/adam-26/react-router-dispatcher/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/5ca5fb8baef7a77d54bf/test_coverage)](https://codeclimate.com/github/adam-26/react-router-dispatcher/test_coverage)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 
 react-router-dispatcher is designed to work with [react-router v4.x](https://github.com/ReactTraining/react-router), it:
-  * uses _actions_ to encapsulate behaviors
+  * uses _actions_ to encapsulate behaviors that can be invoked before rendering
   * supports server-side rendering, including resolving async promises before rendering
   * requires using [react-router-config v4.x](https://github.com/ReactTraining/react-router/tree/master/packages/react-router-config) route configuration
 
 #### Looking for **version 1.x**??
 >[You can find it on the _V1_ branch](https://github.com/adam-26/react-router-dispatcher/tree/v1).
-Version 2 has been simplified and **no longer requires [redux](redux.js.org)**
+Version 2+ has been simplified and **no longer requires [redux](redux.js.org)**
 
 ## Install
 ```sh
@@ -31,6 +31,7 @@ yarn add react-router-dispatcher
   * [react-router-dispatcher-status-code](https://github.com/adam-26/react-router-dispatcher-status-code) set HTTP status code of streaming responses
   * [react-router-dispatcher-redirect](https://github.com/adam-26/react-router-dispatcher-redirect) redirect routes that support SSR streams by redirecting before render
   * [react-router-dispatcher-metadata](https://github.com/adam-26/react-router-dispatcher-metadata) SSR stream supported HTML metadata
+  * [react-router-dispatcher-chunk](https://github.com/adam-26/react-router-dispatcher-chunk) react-chunk dynamic import support to support code-splitting
 
 ## Usage
 
@@ -144,16 +145,15 @@ import getDisplayName from 'react-display-name';
 
 export const LOAD_DATA = 'LOAD_DATA_ACTION';
 
-export default function loadDataAction(paramsToProps = () => {}) {
+export default function loadDataAction() {
   return {
     name: LOAD_DATA,
     staticMethodName: 'loadData',
     initServerAction: (params) => ({
       store: params.store || {}
     }),
-    mapParamsToProps: (params, routerCtx) => {
-      store: params.store,
-      ...paramsToProps(params, routerCtx)
+    filterParamsToProps: (params) => {
+      store: params.store
     }
   };
 }
@@ -174,9 +174,15 @@ class ExampleComponent extends Component {
   };
 
   // loadDataAction invokes this method to load data from an api
-  static loadData(routeProps, actionProps, routerCtx) {
-    const { location, match: { params } } = routeProps;
-    const { store, apiClient } = actionProps;
+  static loadData(actionProps, routerCtx) {
+    const {
+      location,
+      match: {
+        params
+      },
+      store,
+      apiClient
+    } = actionProps;
 
     // async functions must return a Promise
     return apiClient.loadById(params.id).then((data) => {
@@ -192,7 +198,7 @@ class ExampleComponent extends Component {
 
 // the mapper must return the 'propTypes' expected by the component
 const mapParamsToProps = ({ apiClient }) => { apiClient };
-export default withActions(loadDataAction(mapParamsToProps))(ExampleComponent);
+export default withActions(mapParamsToProps, loadDataAction())(ExampleComponent);
 
 ```
 
@@ -209,7 +215,7 @@ It can be useful to allow actions to accept parameters to customize the actions 
   * **required**
   * The action name should also be exported as a `string`, to be used for configuring action order
 
-**staticMethod**: `(routeProps, actionProps, routerCtx) => any`
+**staticMethod**: `(props, routerCtx) => any`
   * One of `staticMethod` **or** `staticMethodName` is **required**
   * Action method implementation, can be defined here or using static methods on components actions are assigned to
   * return a `Promise` for **async** actions
@@ -219,10 +225,9 @@ It can be useful to allow actions to accept parameters to customize the actions 
   * One of `staticMethod` **or** `staticMethodName` is **required**
   * the name of the static method _required_ on any `Component` that the action is applied to
 
-**mapParamsToProps**: `(params, routerCtx) => Object`
+**filterParamsToProps**: `(params) => Object`
   * **required**
-  * maps `actionParams` to component props
-  * this method **must** map params to the Components configured `propTypes`
+  * filters all `actionParams` to include on params required by this action
 
 **hoc**: `(Component) => node`
   * Optional
@@ -239,15 +244,15 @@ It can be useful to allow actions to accept parameters to customize the actions 
   * if your action supports client-side usage but does not need to perform any init, return an **empty** object
     * `initClientAction: (params) => {}`
 
-**successHandler**: `({location}, params) => void`
+**successHandler**: `(props, routerCtx) => void`
   * Optional, invoked after this action is successfully invoked on each matching route
   * Params will include any value(s) assigned from the static action methods
   * NOTE: `params` are the _raw_ dispatcher parameters
 
-**errorHandler**: `(err, {location}, params) => void`
+**errorHandler**: `(err, props) => void`
   * Optional, invoked if any static action methods or success handler fails
 
-**stopServerActions**: `(routeProps, actionProps, routerCtx) => boolean`
+**stopServerActions**: `(props, routerCtx) => boolean`
   * Optional, allows an action to short-circuit/prevent invocation of following action sets with `dispatchOnServer()`
     * For example; An action may determine a redirect is required, therefore invoking following action sets is a waste of resources
 
@@ -270,13 +275,17 @@ It can be useful to allow actions to accept parameters to customize the actions 
   * routeComponentPropNames: `Array<string>`, route prop name(s) that are known to be react components
   * loadingIndicator: `React Component`, a component to display for client-side renders when loading async data
 
-#### `withActions(actions)`
+#### `withActions(mapParamsToProps, actions)`
 
 A higher-order component function for assigned actions to components
 
+**mapParamsToProps**: `(params, routerCtx) => Object`
+  * A function that maps action parameters to prop values required by any actions applied to the component.
+  * Pass `null` if no mapping function is required by the component.
+
 **actions**:
   * one or more actions to be applied to a react component
-  * separate multiple actions using a comma: `withActions(loadData(), parseData())(Component)`
+  * separate multiple actions using a comma: `withActions(null, loadData(), parseData())(Component)`
 
 ### Components
 
