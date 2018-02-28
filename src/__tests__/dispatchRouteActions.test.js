@@ -16,10 +16,16 @@ import {
 let order = [];
 let orderedParams = [];
 const appendOrder = (id) => order.push(id);
-const appendParams = (routeParams, params, routeCtx) => orderedParams.push([routeParams, params, routeCtx]);
+const appendParams = (props, routeCtx) => orderedParams.push([props, routeCtx]);
 
 const LOAD_DATA = 'loadData';
 const PARSE_DATA = 'parseData';
+
+const defaultActionParams = {
+    httpResponse: {
+        statusCode: 200
+    }
+};
 
 function initRoutes(opts = {}) {
     const {
@@ -34,11 +40,11 @@ function initRoutes(opts = {}) {
         mockLoadDataMapToProps: jest.fn(p => p),
         mockInitClientAction: jest.fn(p => p),
         mockParseDataMapToProps: jest.fn(p => p),
-        mockRootAction: jest.fn((routeParams, actionParams, routerCtx) => {
-            appendOrder(0); appendParams(routeParams, actionParams, routerCtx);
+        mockRootAction: jest.fn((actionProps, routerCtx) => {
+            appendOrder(0); appendParams(actionProps, routerCtx);
         }),
-        mockHomeAction: jest.fn((routeParams, actionParams, routerCtx) => {
-            appendOrder(1); appendParams(routeParams, actionParams, routerCtx);
+        mockHomeAction: jest.fn((actionProps, routerCtx) => {
+            appendOrder(1); appendParams(actionProps, routerCtx);
         })
     }, opts);
 
@@ -47,7 +53,7 @@ function initRoutes(opts = {}) {
             name: LOAD_DATA,
             staticMethodName: 'primary',
             initServerAction: mockInitServerAction,
-            mapParamsToProps: mockLoadDataMapToProps
+            filterParamsToProps: mockLoadDataMapToProps
         };
     }
 
@@ -56,18 +62,18 @@ function initRoutes(opts = {}) {
             name: PARSE_DATA,
             staticMethodName: 'secondary',
             initClientAction: mockInitClientAction,
-            mapParamsToProps: mockParseDataMapToProps
+            filterParamsToProps: mockParseDataMapToProps
         };
     }
 
     let Root = ({children}) => <div>{children}</div>;
     Root.propTypes = {children: PropTypes.any};
     Root.primary = mockRootAction;
-    Root = withActions(loadDataAction())(Root);
+    Root = withActions(null, loadDataAction())(Root);
 
     let Home = () => <p>Hello World</p>;
     Home.secondary = mockHomeAction;
-    Home = withActions(parseDataAction())(Home);
+    Home = withActions(null, parseDataAction())(Home);
 
     const routes = [
         { component: Root,
@@ -178,8 +184,14 @@ describe('dispatchRouteActions', () => {
                 jest.fn(() => appendOrder(2))
             ];
 
-            const mockMapFn = jest.fn((params) => params);
+            const mockFilterFn = jest.fn((params) => params);
             const mockInitFn = jest.fn((params) => params);
+
+            const mockMapFns = [
+                jest.fn((params) => params),
+                jest.fn((params) => params),
+                jest.fn((params) => params)
+            ];
 
             let inputParams = { hello: 'world' };
             const match = {match: '0'};
@@ -187,37 +199,46 @@ describe('dispatchRouteActions', () => {
             const routerCtx = {};
             const reduced = reduceActionSets([{
                 initParams: mockInitFn,
-                mapToProps: mockMapFn,
+                filterParams: mockFilterFn,
                 actionErrorHandler: e => { throw e; },
                 actionSuccessHandler: () => null,
                 stopServerActions: () => false,
                 routeActions: [
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[0](m, h); resolve(); }, 300) }), match, routerCtx],
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[1](m, h); resolve(); }, 200) }), match, routerCtx],
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[2](m, h); resolve(); }, 100) }), match, routerCtx]
+                    // TODO: Add MAP FNs
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[0](m, h); resolve(); }, 300) }), match, routerCtx, mockMapFns[0]],
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[1](m, h); resolve(); }, 200) }), match, routerCtx, mockMapFns[1]],
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mocks[2](m, h); resolve(); }, 100) }), match, routerCtx, mockMapFns[2]]
                 ]
             }], location, inputParams);
 
             reduced.then((outputParams) => {
                 // verify output
-                expect(outputParams).toEqual(inputParams);
+                expect(outputParams).toEqual(defaultActionParams);
 
                 // verify mocks
+                expect(mockFilterFn.mock.calls).toHaveLength(1);
+                expect(mockFilterFn.mock.calls[0][0]).toEqual(defaultActionParams);
+
+                expect(mockInitFn.mock.calls).toHaveLength(1);
+                expect(mockInitFn.mock.calls[0][0]).toEqual(defaultActionParams);
+
                 expect(mocks[0].mock.calls).toHaveLength(1);
-                expect(mocks[0].mock.calls[0][0]).toEqual({ location, match });
-                expect(mocks[0].mock.calls[0][1]).toEqual(inputParams);
+                expect(mocks[0].mock.calls[0][0]).toEqual({ ...defaultActionParams, ...inputParams, location, match });
 
-                expect(mockMapFn.mock.calls).toHaveLength(6);
-                expect(mockMapFn.mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[0].mock.calls).toHaveLength(1);
+                expect(mockMapFns[0].mock.calls[0][0]).toEqual(inputParams);
 
-                expect(mockInitFn.mock.calls).toHaveLength(3);
-                expect(mockInitFn.mock.calls[0][0]).toEqual(inputParams);
+                expect(mockMapFns[1].mock.calls).toHaveLength(1);
+                expect(mockMapFns[1].mock.calls[0][0]).toEqual(inputParams);
 
                 expect(mocks[1].mock.calls).toHaveLength(1);
-                expect(mocks[1].mock.calls[0][0]).toEqual({ location, match });
+                expect(mocks[1].mock.calls[0][0]).toEqual({ ...defaultActionParams, ...inputParams, location, match });
+
+                expect(mockMapFns[2].mock.calls).toHaveLength(1);
+                expect(mockMapFns[2].mock.calls[0][0]).toEqual(inputParams);
 
                 expect(mocks[2].mock.calls).toHaveLength(1);
-                expect(mocks[2].mock.calls[0][0]).toEqual({ location, match });
+                expect(mocks[2].mock.calls[0][0]).toEqual({ ...defaultActionParams, ...inputParams, location, match });
 
                 // verify order
                 expect(order).toEqual([2,1,0]);
@@ -235,7 +256,7 @@ describe('dispatchRouteActions', () => {
                 jest.fn(() => appendOrder(2))
             ];
 
-            const mockMapFns = [
+            const mockFilterFns = [
                 jest.fn((params) => params),
                 jest.fn((params) => params),
                 jest.fn((params) => params)
@@ -247,76 +268,85 @@ describe('dispatchRouteActions', () => {
                 jest.fn((params) => params)
             ];
 
+            const mockMapFns = [
+                jest.fn((params) => params),
+                jest.fn((params) => params),
+                jest.fn((params) => params)
+            ];
+
             let inputParams = { hello: 'world' };
             const match = {match: '0'};
             const location = { pathname: '/' };
             const routerCtx = {};
             const reduced = reduceActionSets([{
                 initParams: mockInitFns[0],
-                mapToProps: mockMapFns[0],
+                filterParams: mockFilterFns[0],
                 actionErrorHandler: e => { throw e; },
                 actionSuccessHandler: () => null,
                 stopServerActions: () => false,
                 routeActions: [
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), match, routerCtx]
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), match, routerCtx, mockMapFns[0]]
                 ]
             }, {
                 initParams: mockInitFns[1],
-                mapToProps: mockMapFns[1],
+                filterParams: mockFilterFns[1],
                 actionErrorHandler: e => { throw e; },
                 actionSuccessHandler: () => null,
                 stopServerActions: () => false,
                 routeActions: [
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), match, routerCtx]
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), match, routerCtx, mockMapFns[1]]
                 ]
             }, {
                 initParams: mockInitFns[2],
-                mapToProps: mockMapFns[2],
+                filterParams: mockFilterFns[2],
                 actionErrorHandler: e => { throw e; },
                 actionSuccessHandler: () => null,
                 stopServerActions: () => false,
                 routeActions: [
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), match, routerCtx]
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), match, routerCtx, mockMapFns[2]]
                 ]
             }], location, inputParams);
 
             reduced.then((outputParams) => {
                 // verify output
-                expect(outputParams).toEqual(inputParams);
+                expect(outputParams).toEqual(defaultActionParams);
 
                 // verify mocks
                 expect(mockActionFns[0].mock.calls).toHaveLength(1);
-                expect(mockActionFns[0].mock.calls[0][0]).toEqual({ location, match });
-                expect(mockActionFns[0].mock.calls[0][1]).toEqual(inputParams);
+                expect(mockActionFns[0].mock.calls[0][0]).toEqual({ ...defaultActionParams, ...inputParams, location, match });
 
-                expect(mockMapFns[0].mock.calls).toHaveLength(2);
-                expect(mockMapFns[0].mock.calls[0][0]).toEqual(inputParams);
-                expect(mockMapFns[0].mock.calls[1][0]).toEqual(inputParams);
+                expect(mockFilterFns[0].mock.calls).toHaveLength(1);
+                expect(mockFilterFns[0].mock.calls[0][0]).toEqual(defaultActionParams);
 
                 expect(mockInitFns[0].mock.calls).toHaveLength(1);
-                expect(mockInitFns[0].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockInitFns[0].mock.calls[0][0]).toEqual(defaultActionParams);
+
+                expect(mockMapFns[0].mock.calls).toHaveLength(1);
+                expect(mockMapFns[0].mock.calls[0][0]).toEqual(inputParams);
 
                 expect(mockActionFns[1].mock.calls).toHaveLength(1);
-                expect(mockActionFns[1].mock.calls[0][0]).toEqual({ location, match });
-                expect(mockActionFns[1].mock.calls[0][1]).toEqual(inputParams);
+                expect(mockActionFns[1].mock.calls[0][0]).toEqual({ ...defaultActionParams, ...inputParams, location, match });
 
-                expect(mockMapFns[1].mock.calls).toHaveLength(2);
-                expect(mockMapFns[1].mock.calls[0][0]).toEqual(inputParams);
-                expect(mockMapFns[1].mock.calls[1][0]).toEqual(inputParams);
+                expect(mockFilterFns[1].mock.calls).toHaveLength(1);
+                expect(mockFilterFns[1].mock.calls[0][0]).toEqual(defaultActionParams);
 
                 expect(mockInitFns[1].mock.calls).toHaveLength(1);
-                expect(mockInitFns[1].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockInitFns[1].mock.calls[0][0]).toEqual(defaultActionParams);
+
+                expect(mockMapFns[1].mock.calls).toHaveLength(1);
+                expect(mockMapFns[1].mock.calls[0][0]).toEqual(inputParams);
 
                 expect(mockActionFns[2].mock.calls).toHaveLength(1);
-                expect(mockActionFns[2].mock.calls[0][0]).toEqual({ location, match });
-                expect(mockActionFns[2].mock.calls[0][1]).toEqual(inputParams);
+                expect(mockActionFns[2].mock.calls[0][0]).toEqual({ ...defaultActionParams, ...inputParams, location, match });
 
-                expect(mockMapFns[2].mock.calls).toHaveLength(2);
-                expect(mockMapFns[2].mock.calls[0][0]).toEqual(inputParams);
-                expect(mockMapFns[2].mock.calls[1][0]).toEqual(inputParams);
+                expect(mockFilterFns[2].mock.calls).toHaveLength(1);
+                expect(mockFilterFns[2].mock.calls[0][0]).toEqual(defaultActionParams);
 
                 expect(mockInitFns[2].mock.calls).toHaveLength(1);
-                expect(mockInitFns[2].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockInitFns[2].mock.calls[0][0]).toEqual(defaultActionParams);
+
+                expect(mockMapFns[2].mock.calls).toHaveLength(1);
+                expect(mockMapFns[2].mock.calls[0][0]).toEqual(inputParams);
 
                 // verify order
                 expect(order).toEqual([0,1,2]);
@@ -334,13 +364,19 @@ describe('dispatchRouteActions', () => {
                 jest.fn(() => appendOrder(2))
             ];
 
-            const mockMapFns = [
+            const mockInitFns = [
                 jest.fn((params) => params),
                 jest.fn((params) => params),
                 jest.fn((params) => params)
             ];
 
-            const mockInitFns = [
+            const mockFilterFns = [
+                jest.fn((params) => params),
+                jest.fn((params) => params),
+                jest.fn((params) => params)
+            ];
+
+            const mockMapFns = [
                 jest.fn((params) => params),
                 jest.fn((params) => params),
                 jest.fn((params) => params)
@@ -353,64 +389,65 @@ describe('dispatchRouteActions', () => {
             const routerCtx = {};
             const reduced = reduceActionSets([{
                 initParams: mockInitFns[0],
-                mapToProps: mockMapFns[0],
+                filterParams: mockFilterFns[0],
                 actionErrorHandler: e => { throw e; },
                 actionSuccessHandler: () => null,
                 stopServerActions: () => false,
                 routeActions: [
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), match, routerCtx]
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[0](m, h); resolve(); }, 300) }), match, routerCtx, mockMapFns[0]]
                 ]
             }, {
                 initParams: mockInitFns[1],
-                mapToProps: mockMapFns[1],
+                filterParams: mockFilterFns[1],
                 actionErrorHandler: e => { throw e; },
                 actionSuccessHandler: () => null,
                 stopServerActions: () => true,
                 routeActions: [
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), match, routerCtx]
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[1](m, h); resolve(); }, 200) }), match, routerCtx, mockMapFns[1]]
                 ]
             }, {
                 initParams: mockInitFns[2],
-                mapToProps: mockMapFns[2],
+                filterParams: mockFilterFns[2],
                 actionErrorHandler: e => { throw e; },
                 actionSuccessHandler: () => null,
                 stopServerActions: mockStopServerActions,
                 routeActions: [
-                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), match, routerCtx]
+                    [(m, h) => new Promise(resolve => { setTimeout(() => { mockActionFns[2](m, h); resolve(); }, 100) }), match, routerCtx, mockMapFns[2]]
                 ]
             }], location, inputParams);
 
             reduced.then((outputParams) => {
                 // verify output
-                expect(outputParams).toEqual(inputParams);
+                expect(outputParams).toEqual(defaultActionParams);
 
                 // verify mocks
                 expect(mockActionFns[0].mock.calls).toHaveLength(1);
-                expect(mockActionFns[0].mock.calls[0][0]).toEqual({ location, match });
-                expect(mockActionFns[0].mock.calls[0][1]).toEqual(inputParams);
+                expect(mockActionFns[0].mock.calls[0][0]).toEqual({ ...defaultActionParams, ...inputParams, location, match });
 
-                expect(mockMapFns[0].mock.calls).toHaveLength(2);
-                expect(mockMapFns[0].mock.calls[0][0]).toEqual(inputParams);
-                expect(mockMapFns[0].mock.calls[1][0]).toEqual(inputParams);
+                expect(mockFilterFns[0].mock.calls).toHaveLength(1);
+                expect(mockFilterFns[0].mock.calls[0][0]).toEqual(defaultActionParams);
 
                 expect(mockInitFns[0].mock.calls).toHaveLength(1);
-                expect(mockInitFns[0].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockInitFns[0].mock.calls[0][0]).toEqual(defaultActionParams);
+
+                expect(mockMapFns[0].mock.calls).toHaveLength(1);
 
                 expect(mockActionFns[1].mock.calls).toHaveLength(1);
-                expect(mockActionFns[1].mock.calls[0][0]).toEqual({ location, match });
-                expect(mockActionFns[1].mock.calls[0][1]).toEqual(inputParams);
+                expect(mockActionFns[1].mock.calls[0][0]).toEqual({ ...defaultActionParams, ...inputParams, location, match });
 
-                expect(mockMapFns[1].mock.calls).toHaveLength(2);
-                expect(mockMapFns[1].mock.calls[0][0]).toEqual(inputParams);
-                expect(mockMapFns[1].mock.calls[1][0]).toEqual(inputParams);
+                expect(mockFilterFns[1].mock.calls).toHaveLength(1);
+                expect(mockFilterFns[1].mock.calls[0][0]).toEqual(defaultActionParams);
 
                 expect(mockInitFns[1].mock.calls).toHaveLength(1);
-                expect(mockInitFns[1].mock.calls[0][0]).toEqual(inputParams);
+                expect(mockInitFns[1].mock.calls[0][0]).toEqual(defaultActionParams);
+
+                expect(mockMapFns[1].mock.calls).toHaveLength(1);
 
                 // The last actionSet should NOT be invoked
                 expect(mockActionFns[2].mock.calls).toHaveLength(0);
-                expect(mockMapFns[2].mock.calls).toHaveLength(0);
                 expect(mockInitFns[2].mock.calls).toHaveLength(0);
+                expect(mockFilterFns[2].mock.calls).toHaveLength(0);
+                expect(mockMapFns[2].mock.calls).toHaveLength(0);
 
                 expect(mockStopServerActions.mock.calls).toHaveLength(0);
 
@@ -448,16 +485,14 @@ describe('dispatchRouteActions', () => {
                 expect(mockRootAction.mock.calls).toHaveLength(1);
                 expect(order).toEqual([0, 1]);
 
-                // verify match params
+                // verify props
                 expect(orderedParams[0][0].location).toBeDefined();
                 expect(orderedParams[0][0].match).toBeDefined();
-
-                // verify action params
-                expect(orderedParams[0][1]).toEqual({ ...actionParams, httpResponse: { statusCode: 200 } });
+                expect(orderedParams[0][0].httpResponse).toBeDefined();
 
                 // verify route params
-                expect(orderedParams[0][2].route).toBeDefined();
-                expect(orderedParams[0][2].routeComponentKey).toBeDefined();
+                expect(orderedParams[0][1].route).toBeDefined();
+                expect(orderedParams[0][1].routeComponentKey).toBeDefined();
                 done();
             });
         });
@@ -561,7 +596,7 @@ describe('dispatchRouteActions', () => {
             // Custom init for client dispatcher tests
             const { routes, mocks } = initRoutes({
                 mockInitClientAction: jest.fn(p => ({ ...p, clientData: {} })),
-                mockHomeAction: jest.fn((routeParams, actionParams/*, routerCtx*/) => {
+                mockHomeAction: jest.fn((actionParams/*, routerCtx*/) => {
                     actionParams.clientData.value = 1
                 })
             });

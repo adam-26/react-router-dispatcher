@@ -73,7 +73,7 @@ class RouteDispatcher extends Component {
         routes: PropTypes.array.isRequired,
 
         /**
-         * The nam of the action(s) to invoke on route components.
+         * The name of the action(s) to invoke on route components.
          *
          * This can be an array of strings, or an array of string arrays. When an array of arrays,
          * each array of actions is dispatched serially.
@@ -129,12 +129,12 @@ class RouteDispatcher extends Component {
       },
     };
 
-    static dispatchServerActions(location, actionNames, routeCfg, params) {
-        return dispatchServerActions(location, actionNames, routeCfg, params);
+    static dispatchServerActions(location, actionNames, routeCfg, props) {
+        return dispatchServerActions(location, actionNames, routeCfg, props);
     }
 
-    static dispatchClientActions(location, actionNames, routeCfg, params) {
-        return dispatchClientActions(location, actionNames, routeCfg, params);
+    static dispatchClientActions(location, actionNames, routeCfg, props) {
+        return dispatchClientActions(location, actionNames, routeCfg, props);
     }
 
     static componentDispatch(actionNames, props) {

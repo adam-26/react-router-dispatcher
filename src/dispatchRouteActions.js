@@ -3,6 +3,7 @@ import React from 'react';
 import invariant from 'invariant';
 import { matchRoutes } from 'react-router-config';
 
+// TODO: Remove the need for any default parameters
 const defaultParams = {
     httpResponse: {
         statusCode: 200
@@ -84,25 +85,27 @@ export function resolveActionSets(routeComponents, dispatchActions, initParamFun
                 }
 
                 const { staticMethod, staticMethodName } = componentAction;
+                const componentParamsToProps = component.getDispatchParamToProps();
                 const actionMethod = staticMethod || component[staticMethodName];
-                promises.push([actionMethod, match, routerContext]);
+                promises.push([actionMethod, match, routerContext, componentParamsToProps]);
             });
 
             if (action === null) {
                 return;
             }
 
-            const { successHandler, errorHandler, stopServerActions, mapParamsToProps } = action;
+            const { name, successHandler, errorHandler, stopServerActions, filterParamsToProps } = action;
             resolvedActionSets.push({
+                name: name,
                 routeActions: promises,
                 actionSuccessHandler: typeof successHandler === 'function' ? successHandler : () => null,
                 actionErrorHandler: typeof errorHandler === 'function' ? errorHandler : err => { throw err },
                 stopServerActions: typeof stopServerActions === 'function' ? stopServerActions : false, // here or bundled with route actions?
                 initParams:
                     (typeof initParamFuncName === 'string' && action[initParamFuncName]) || (params => params),
-                mapToProps: isLifecycleMethod ?
+                filterParams: isLifecycleMethod ?
                     props => props :
-                    mapParamsToProps
+                    filterParamsToProps
             });
 
         });
@@ -111,30 +114,39 @@ export function resolveActionSets(routeComponents, dispatchActions, initParamFun
     return resolvedActionSets;
 }
 
-function createActionSetPromise(resolvedActionSet, location, params) {
+function createActionSetPromise(resolvedActionSet, location, actionParams, props) {
     const {
         routeActions,
         actionSuccessHandler,
         actionErrorHandler,
         stopServerActions,
         initParams,
-        mapToProps
+        filterParams
     } = resolvedActionSet;
 
+    // This is a 2-step process - first init & assign the action parameters, this data is returned to the caller
+    const filteredParams = filterParams(Object.assign(actionParams, initParams(actionParams)));
+    // Then, append the route 'location' to the props that are passed to all action methods
+    // - this prevents the 'location' data from being returned to the caller
+    const filteredProps = Object.assign({ location }, filteredParams);
+
     // Invoke each route action
-    return Promise.all(routeActions.map(([componentAction, match, routerContext]) => {
+    return Promise.all(routeActions.map(([componentAction, match, routerContext, componentParamsToProps]) => {
         return Promise.resolve(componentAction(
-            {location, match},
-            mapToProps(Object.assign(params, initParams(params)), routerContext),
+            {
+                ...componentParamsToProps(props, routerContext),
+                ...filteredProps,
+                match
+            },
             routerContext));
         })
     )
 
     // Invoke any configured post-action handlers
-    .then(() => Promise.resolve(actionSuccessHandler({location}, params)))
+    .then(() => Promise.resolve(actionSuccessHandler(filteredProps)))
 
     // Handle any action-specific error(s)
-    .catch(err => actionErrorHandler(err, {location}, params))
+    .catch(err => actionErrorHandler(err, filteredProps))
 
     // determine if the next action set should be invoked
     .then(() => Promise.resolve(
@@ -142,21 +154,22 @@ function createActionSetPromise(resolvedActionSet, location, params) {
         !routeActions.some(([ componentAction, match, routerContext ]) =>
             stopServerActions === false ?
                 false :
-                stopServerActions({location, match}, mapToProps(params, routerContext), routerContext))
+                stopServerActions({ ...filteredProps, match }, routerContext))
     ));
 }
 
-export function reduceActionSets(resolvedActionSets, location, params) {
+export function reduceActionSets(resolvedActionSets, location, props) {
+    const actionParams = Object.assign({}, defaultParams);
     let promiseActionSet = Promise.resolve(true); // always start w/true to invoke the first actionSet
 
     while (resolvedActionSets.length > 0) {
         const resolvedActionSet = resolvedActionSets.shift(); // IMPORTANT: don't refactor this inside the promise fn
         promiseActionSet = promiseActionSet
             .then((invokeActions) =>
-                invokeActions ? createActionSetPromise(resolvedActionSet, location, params) : Promise.resolve(invokeActions));
+                invokeActions ? createActionSetPromise(resolvedActionSet, location, actionParams, props) : Promise.resolve(invokeActions));
     }
-    // TODO... verify PARAMS is "safe" for lifecycle method re-use...
-    return promiseActionSet.then(() => Promise.resolve(params));
+
+    return promiseActionSet.then(() => Promise.resolve(actionParams));
 }
 
 export function matchRouteComponents(location, routes, routeComponentPropNames) {
@@ -168,9 +181,8 @@ export function matchRouteComponents(location, routes, routeComponentPropNames) 
     return resolveRouteComponents(branch, routeComponentPropNames);
 }
 
-export function dispatchRouteActions(location, actions, routeConfig, params, initParamFuncName, isLifecycleMethod, actionFilter) {
+export function dispatchRouteActions(location, actions, routeConfig, props, initParamFuncName, isLifecycleMethod, actionFilter) {
     const { routes, routeComponentPropNames } = routeConfig;
-    const actionParams = Object.assign({}, defaultParams, params);
 
     // Determine all RouteComponent(s) matched for the current route
     const routeComponents = matchRouteComponents(location, routes, routeComponentPropNames);
@@ -179,7 +191,7 @@ export function dispatchRouteActions(location, actions, routeConfig, params, ini
     }
 
     const dispatchActions = typeof actions === 'function' ?
-        parseDispatchActions(actions(location, actionParams)) :
+        parseDispatchActions(actions(location, props)) :
         actions;
 
     const actionSets = resolveActionSets(
@@ -189,7 +201,7 @@ export function dispatchRouteActions(location, actions, routeConfig, params, ini
         isLifecycleMethod,
         actionFilter);
 
-    return reduceActionSets(actionSets, location, actionParams);
+    return reduceActionSets(actionSets, location, props);
 }
 
 export function parseDispatchActions(dispatchActions) {
@@ -242,14 +254,14 @@ function isServerAction(action) {
  * @param location
  * @param actionNames
  * @param routeConfig
- * @param params
+ * @param props
  */
-export function dispatchComponentActions(location, actionNames, routeConfig, params) {
+export function dispatchComponentActions(location, actionNames, routeConfig, props) {
     return dispatchRouteActions(
         location,
         actionNames,
         routeConfig,
-        params,
+        props,
         'initComponentAction',
         true);
 }
@@ -260,15 +272,15 @@ export function dispatchComponentActions(location, actionNames, routeConfig, par
  * @param location
  * @param actionNames
  * @param routeConfig
- * @param params
+ * @param props
  * @returns {*}
  */
-export function dispatchServerActions(location, actionNames, routeConfig, params) {
+export function dispatchServerActions(location, actionNames, routeConfig, props) {
     return dispatchRouteActions(
         location,
         standardizeActionNames(actionNames),
         routeConfig,
-        params,
+        props,
         'initServerAction',
         false,
         isServerAction);
@@ -280,13 +292,13 @@ export function dispatchServerActions(location, actionNames, routeConfig, params
  * @param location
  * @param actionNames
  * @param routeConfig
- * @param params
+ * @param props
  * @returns {*}
  */
-export function dispatchClientActions(location, actionNames, routeConfig, params) {
+export function dispatchClientActions(location, actionNames, routeConfig, props) {
     const { routes, routeComponentPropNames } = routeConfig;
 
-    const clientParams = Object.assign({}, defaultParams, params);
+    const actionParams = Object.assign({}, defaultParams); // used for internal action parameters
     const clientActionSets = standardizeActionNames(actionNames);
     const routeComponents = matchRouteComponents(
         location,
@@ -301,15 +313,22 @@ export function dispatchClientActions(location, actionNames, routeConfig, params
             }
 
             const componentActions = component.getDispatcherActions(actionSet, isClientAction);
-            componentActions.forEach(({ staticMethod, staticMethodName, mapParamsToProps, initClientAction }) => {
+            const componentParamsToProps = component.getDispatchParamToProps();
+
+            componentActions.forEach(({ staticMethod, staticMethodName, filterParamsToProps, initClientAction }) => {
                 const componentActionMethod = staticMethod || component[staticMethodName];
+
                 componentActionMethod(
-                    { location, match },
-                    mapParamsToProps(Object.assign(clientParams, initClientAction(clientParams)), routerCtx),
+                    {
+                        ...componentParamsToProps(props, routerCtx),
+                        ...filterParamsToProps(Object.assign(actionParams, initClientAction(actionParams))),
+                        location,
+                        match
+                    },
                     routerCtx);
             });
         });
     });
 
-    return clientParams;
+    return actionParams;
 }

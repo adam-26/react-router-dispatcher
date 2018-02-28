@@ -22,84 +22,85 @@ describe('withActions', () => {
     });
 
     test('validates action', () => {
-        expect(() => withActions({})).toThrow(/name/);
-        expect(() => withActions({ name: 1 })).toThrow(/name/);
+        expect(() => withActions({})).toThrow(/mapParamsToProps/);
+        expect(() => withActions(false)).toThrow(/mapParamsToProps/);
 
-        expect(() => withActions({ name: 'n' })).toThrow(/staticMethodName/);
-        expect(() => withActions({ name: 'n', staticMethodName: 1 })).toThrow(/staticMethodName/);
+        expect(() => withActions(null, {})).toThrow(/name/);
+        expect(() => withActions(null, { name: 1 })).toThrow(/name/);
 
-        expect(() => withActions({
+        expect(() => withActions(null, { name: 'n' })).toThrow(/staticMethodName/);
+        expect(() => withActions(null, { name: 'n', staticMethodName: 1 })).toThrow(/staticMethodName/);
+
+        expect(() => withActions(null, {
             name: 'n',
             staticMethodName: 's',
-            requireMapParamsToProps: true
-        })).toThrow(/mapParamsToProps/);
+            filterParamsToProps: false
+        })).toThrow(/filterParamsToProps/);
 
-        expect(() => withActions({
+        expect(() => withActions(null, {
             name: 'n',
             staticMethodName: 's',
-            mapParamsToProps: 1,
-            requireMapParamsToProps: true
-        })).toThrow(/mapParamsToProps/);
+        })).toThrow(/filterParamsToProps/);
 
-        expect(() => withActions({
+        expect(() => withActions(null, {
             name: 'n',
             staticMethodName: 's',
-            mapParamsToProps: () => {},
+            filterParamsToProps: () => {},
             initServerAction: 1
         })).toThrow(/initServerAction/);
 
-        expect(() => withActions({
+        expect(() => withActions(null, {
             name: 'n',
             staticMethodName: 's',
-            mapParamsToProps: () => {},
+            filterParamsToProps: () => {},
             initClientAction: 1
         })).toThrow(/initClientAction/);
 
-        expect(() => withActions({
+        expect(() => withActions(null, {
             name: 'n',
             staticMethodName: 's',
-            mapParamsToProps: () => {},
+            filterParamsToProps: () => {},
             hoc: 1
         })).toThrow(/hoc/);
     });
 
     test('throws when component has not defined the static method required by the action', () => {
-        expect(() => withActions({
+        expect(() => withActions(null, {
             name: 'n',
             staticMethodName: 's',
-            mapParamsToProps: () => {},
+            filterParamsToProps: () => {},
         })(TestComponent)).toThrow(/missing the required static/);
     });
 
     test('does not throw when action defines static method', () => {
-        expect(() => withActions({
+        expect(() => withActions(null, {
             name: 'n',
             staticMethod: () => {},
             staticMethodName: 'redundantMethod',
-            mapParamsToProps: () => {},
+            filterParamsToProps: () => {},
         })(TestComponent)).not.toThrow();
     });
 
     describe('getDispatcherActions', () => {
         let actionComponent;
         beforeAll(() => {
-            actionComponent = withActions({
+            actionComponent = withActions(null, {
                 name: 'action1',
                 staticMethod: () => {},
                 staticMethodName: 'method1',
-                mapParamsToProps: () => {},
+                filterParamsToProps: () => {},
             }, {
                 name: 'action2',
                 staticMethod: () => {},
                 initServerAction: p => p,
                 staticMethodName: 'method1',
-                mapParamsToProps: () => {},
+                filterParamsToProps: () => {},
             }, {
                 name: 'action3',
                 initClientAction: p => p,
                 staticMethod: () => {},
                 staticMethodName: 'method1',
-                mapParamsToProps: () => {},
+                filterParamsToProps: () => {},
             })(TestComponent);
         });
 
@@ -124,25 +125,25 @@ describe('withActions', () => {
         });
 
         test('applies multiple withActions() actions to component', () => {
-            actionComponent = withActions({
+            actionComponent = withActions(null, {
                 name: 'action1',
                 staticMethod: () => {},
                 staticMethodName: 'method1',
-                mapParamsToProps: () => {},
+                filterParamsToProps: () => {},
             })(TestComponent);
-            actionComponent = withActions({
+            actionComponent = withActions(null, {
                 name: 'action2',
                 staticMethod: () => {},
                 initServerAction: p => p,
                 staticMethodName: 'method2',
-                mapParamsToProps: () => {},
+                filterParamsToProps: () => {},
             })(actionComponent);
-            actionComponent = withActions({
+            actionComponent = withActions(null, {
                 name: 'action3',
                 initClientAction: p => p,
                 staticMethod: () => {},
                 staticMethodName: 'method3',
-                mapParamsToProps: () => {},
+                filterParamsToProps: () => {},
             })(actionComponent);
 
             expect(
@@ -151,10 +152,10 @@ describe('withActions', () => {
         });
 
         test('applies withActions() to a null component', () => {
-            actionComponent = withActions({
+            actionComponent = withActions(null, {
                 name: 'action1',
                 staticMethod: () => {},
-                mapParamsToProps: () => {},
+                filterParamsToProps: () => {},
             })(null);
 
             expect(
@@ -175,20 +176,20 @@ describe('withActions', () => {
             return wrapped;
         };
 
-        const ActionComponent = withActions({
+        const ActionComponent = withActions(null, {
             name: 'action1',
             staticMethod: () => {},
-            mapParamsToProps: () => {},
+            filterParamsToProps: () => {},
             hoc: HOC('action1')
         }, {
             name: 'action2',
             staticMethod: () => {},
-            mapParamsToProps: () => {},
+            filterParamsToProps: () => {},
             hoc: HOC('action2')
         }, {
             name: 'action3',
             staticMethod: () => {},
-            mapParamsToProps: () => {},
+            filterParamsToProps: () => {},
             hoc: HOC('action3')
         })(TestComponent);
 
