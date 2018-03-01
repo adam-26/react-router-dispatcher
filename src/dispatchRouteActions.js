@@ -84,8 +84,10 @@ export function resolveActionSets(routeComponents, dispatchActions, initParamFun
                     action = componentAction;
                 }
 
+                // Determine the component mapper - lifecycle methods should NOT map prop values
+                const componentParamsToProps = isLifecycleMethod ? (p => p) : component.getDispatchParamToProps();
+
                 const { staticMethod, staticMethodName } = componentAction;
-                const componentParamsToProps = component.getDispatchParamToProps();
                 const actionMethod = staticMethod || component[staticMethodName];
                 promises.push([actionMethod, match, routerContext, componentParamsToProps]);
             });
