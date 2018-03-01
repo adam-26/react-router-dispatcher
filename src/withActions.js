@@ -79,23 +79,30 @@ export default function withActions(mapParamsToProps, ...actions) {
     return (Component) => {
         const hocDispatcherActions = actions.slice();
         const isComponentNull = Component === null;
+        let ComposedComponent = null;
+
+        let actionHOC = (props) => isComponentNull ? null : React.createElement(ComposedComponent, props);
 
         // Compose the actions (components)
-        const ComposedComponent = actions.reduceRight((child, { hoc }) => {
+        ComposedComponent = actions.reduceRight((child, { hoc }) => {
             if (typeof hoc !== 'function') {
                 return child;
             }
 
-            const HOC = child === null ? hoc(child) : hoistNonReactStatics(hoc(child), child);
+            const wrappedComponent = hoc(child, actionHOC);
+            const composedHOC = (child === null || wrappedComponent === child) ?
+                wrappedComponent :
+                hoistNonReactStatics(wrappedComponent, child);
+
             if (child !== null) {
-                HOC.WrappedComponent = child;
+                composedHOC.WrappedComponent = child;
 
                 if (typeof child.getDispatcherActions === 'function') {
                     Array.prototype.unshift.apply(hocDispatcherActions, child.getDispatcherActions());
                 }
             }
 
-            return HOC;
+            return composedHOC;
         }, Component);
 
         if (actions.length === 1 && !isComponentNull && typeof Component.getDispatcherActions === 'function') {
@@ -120,16 +127,14 @@ export default function withActions(mapParamsToProps, ...actions) {
             }
         }
 
-        let HOC = (props) => isComponentNull ? null :(<ComposedComponent {...props} />);
-
-        HOC.displayName = `withActions(${isComponentNull ? 'null' : getDisplayName(ComposedComponent)})`;
+        actionHOC.displayName = `withActions(${isComponentNull ? 'null' : getDisplayName(ComposedComponent)})`;
 
         if (!isComponentNull) {
-            HOC = hoistNonReactStatics(HOC, ComposedComponent);
-            HOC.WrappedComponent = ComposedComponent;
+            actionHOC = hoistNonReactStatics(actionHOC, ComposedComponent);
+            actionHOC.WrappedComponent = ComposedComponent;
         }
 
-        HOC.getDispatcherActions = function getDispatcherActions(
+        actionHOC.getDispatcherActions = function getDispatcherActions(
             permittedActionNames: Array<string> = [],
             filter: (action: Object) => boolean = () => true
         ) {
@@ -141,10 +146,10 @@ export default function withActions(mapParamsToProps, ...actions) {
             })
         };
 
-        HOC.getDispatchParamToProps = function getDispatchParamToProps() {
+        actionHOC.getDispatchParamToProps = function getDispatchParamToProps() {
             return paramsToProps;
         };
 
-        return HOC;
+        return actionHOC;
     };
 }
