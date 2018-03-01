@@ -229,7 +229,7 @@ It can be useful to allow actions to accept parameters to customize the actions 
   * **required**
   * filters all `actionParams` to include on params required by this action
 
-**hoc**: `(Component) => node`
+**hoc**: `(Component, ActionHOC) => node`
   * Optional
   * Defines a higher-order component that is applied to _all_ components that have the action assigned
   * Using higher-order components makes actions very versatile!
