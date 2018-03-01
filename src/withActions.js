@@ -7,6 +7,17 @@ import warning from 'warning';
 
 const __DEV__ = process.env.NODE_ENV !== 'production';
 
+function hoistSafeStatics(targetComponent, sourceComponent, blacklist = {}) {
+    return hoistNonReactStatics(targetComponent, sourceComponent, Object.assign({
+        // prevent hoisting the following static methods
+        getDispatcherActions: true,
+        getDispatchParamToProps: true,
+        getDispatchParamsToProps: true,
+        appendActionDispatcher: true,
+        WrappedComponent: true
+    }, blacklist));
+}
+
 export default function withActions(mapParamsToProps, ...actions) {
     if (!(typeof mapParamsToProps === 'undefined' || mapParamsToProps === null)) {
         invariant(typeof mapParamsToProps === 'function', '"mapParamsToProps" must be either a function, or null.');
@@ -83,6 +94,18 @@ export default function withActions(mapParamsToProps, ...actions) {
 
         let actionHOC = (props) => isComponentNull ? null : React.createElement(ComposedComponent, props);
 
+        actionHOC.appendActionDispatcher = function appendActionDispatcher(ActionDispatcherComponent, hocBlacklist = {}) {
+            if (typeof ActionDispatcherComponent === 'undefined' ||
+                ActionDispatcherComponent === null ||
+                typeof ActionDispatcherComponent.getDispatcherActions !== 'function') {
+                // Ignore non dispatcher components
+                return;
+            }
+
+            Array.prototype.unshift.apply(hocDispatcherActions, ActionDispatcherComponent.getDispatcherActions());
+            hoistSafeStatics(actionHOC, ActionDispatcherComponent, hocBlacklist);
+        };
+
         // Compose the actions (components)
         ComposedComponent = actions.reduceRight((child, { hoc }) => {
             if (typeof hoc !== 'function') {
@@ -92,7 +115,7 @@ export default function withActions(mapParamsToProps, ...actions) {
             const wrappedComponent = hoc(child, actionHOC);
             const composedHOC = (child === null || wrappedComponent === child) ?
                 wrappedComponent :
-                hoistNonReactStatics(wrappedComponent, child);
+                hoistSafeStatics(wrappedComponent, child);
 
             if (child !== null) {
                 composedHOC.WrappedComponent = child;
@@ -130,7 +153,7 @@ export default function withActions(mapParamsToProps, ...actions) {
         actionHOC.displayName = `withActions(${isComponentNull ? 'null' : getDisplayName(ComposedComponent)})`;
 
         if (!isComponentNull) {
-            actionHOC = hoistNonReactStatics(actionHOC, ComposedComponent);
+            actionHOC = hoistSafeStatics(actionHOC, ComposedComponent);
             actionHOC.WrappedComponent = ComposedComponent;
         }
 
