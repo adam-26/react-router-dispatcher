@@ -8,7 +8,7 @@ import warning from 'warning';
 const __DEV__ = process.env.NODE_ENV !== 'production';
 
 function hoistSafeStatics(targetComponent, sourceComponent, blacklist = {}) {
-    hoistNonReactStatics(targetComponent, sourceComponent, Object.assign({
+    return hoistNonReactStatics(targetComponent, sourceComponent, Object.assign({
         // prevent hoisting the following static methods
         getDispatcherActions: true,
         getDispatchParamToProps: true,
