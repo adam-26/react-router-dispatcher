@@ -1,6 +1,6 @@
 {
   "name": "react-router-dispatcher",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "description": "react-router v4 action dispatcher",
   "main": "lib/index.js",
   "module": "src/index.js",
