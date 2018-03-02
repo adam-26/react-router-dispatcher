@@ -342,7 +342,6 @@ const [component, match, routerContext] = matchedRoutes[0];
 const { route, routeComponentKey } = routerContext;
 ```
 
-
 ### Contribute
 For questions or issues, please [open an issue](https://github.com/adam-26/react-router-dispatcher/issues), and you're welcome to submit a PR for bug fixes and feature requests.
 
