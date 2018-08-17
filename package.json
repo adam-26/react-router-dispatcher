@@ -65,7 +65,7 @@
     "hoist-non-react-statics": "^2.3.1",
     "invariant": "^2.2.2",
     "react-display-name": "^0.2.3",
-    "warning": "^3.0.0"
+    "warning": "^4.0.2"
   },
   "jest": {
     "mapCoverage": true,
